@@ -722,8 +722,8 @@ function showFlash(outcome, message) {
 async function streamReport(ringId) {
   const el = document.getElementById('report-content');
   const badge = document.getElementById('report-badge');
-  el.className = 'active';
   el.textContent = '';
+  el.style.color = 'var(--text)';  // always white, regardless of class
   badge.textContent = 'STREAMING';
   badge.className = 'panel-badge badge-blue';
 
@@ -787,9 +787,9 @@ async function pollStats() {
 // ── Graph polling ────────────────────────────────────────────
 async function pollGraph() {
   try {
-    const res = await fetch(`${API}/graph`);
+    const res = await fetch(`${API}/graph`, { signal: AbortSignal.timeout(4000) });
     const data = await res.json();
-    updateGraph(data, []);
+    updateGraph(data, lastFlaggedAccounts || []);
   } catch(err) {}
 }
 
@@ -858,17 +858,74 @@ function toggleAuto() {
 
 // ── SSE log stream ────────────────────────────────────────────
 let logES = null;
+let lastRingId = null;
+let lastFlaggedAccounts = [];
+
 function startLogStream() {
   if (logES) { logES.close(); }
   logES = new EventSource(`${API}/stream/battle`);
   logES.onmessage = (e) => {
     const entry = JSON.parse(e.data);
     appendLog(entry);
-    // If a detection happened, refresh graph
-    if (entry.kind === 'detect' || entry.kind === 'evade') {
+
+    if (entry.kind === 'detect') {
+      // Extract ring ID from message e.g. "Ring Scout flagged R_001 ..."
+      const match = entry.message.match(/R_\d+/);
+      if (match) {
+        const ringId = match[0];
+        if (ringId !== lastRingId) {
+          lastRingId = ringId;
+
+          // Stream report IMMEDIATELY — don't wait for ring fetch
+          streamReport(ringId);
+
+          // Show flash banner
+          const scoreMatch = entry.message.match(/(\d+)\/100/);
+          const score = scoreMatch ? scoreMatch[1] : '?';
+          showFlash('detected', ringId + ' flagged — score ' + score + '/100');
+
+          // Separately fetch ring data just for node highlighting
+          fetch(API + '/ring/' + ringId)
+            .then(r => r.ok ? r.json() : null)
+            .then(ring => {
+              if (ring && ring.accounts) {
+                lastFlaggedAccounts = ring.accounts;
+                pollGraph();
+              }
+            }).catch(() => {});
+        }
+      }
+      pollStats();
+
+    } else if (entry.kind === 'evade') {
+      lastFlaggedAccounts = [];
       pollGraph();
       pollStats();
+      showFlash('evaded', 'Attack evaded — DefenseAI adapting...');
+      const el    = document.getElementById('report-content');
+      const badge = document.getElementById('report-badge');
+      el.textContent = '\u26a0 EVASION\n\nAn attack slipped through Ring Scout.\nDefenseAI is now generating a new detection rule.\nWatch the Active Rules bar below.';
+      badge.textContent = 'EVADED';
+      badge.className   = 'panel-badge badge-grey';
+
+    } else if (entry.kind === 'adapt') {
+      // Show what rule was added
+      const el    = document.getElementById('report-content');
+      const badge = document.getElementById('report-badge');
+      if (badge.textContent === 'EVADED') {
+        el.textContent = '\ud83d\udee1 DEFENSE ADAPTED\n\n' + entry.message;
+        badge.textContent = 'RULE ADDED';
+        badge.className   = 'panel-badge badge-green';
+      }
+      pollStats();
     }
+  };
+
+  logES.onerror = () => {
+    // Reconnect on error after short delay
+    setTimeout(() => {
+      if (autoRunning) startLogStream();
+    }, 2000);
   };
 }
 
@@ -883,10 +940,13 @@ async function resetArena() {
       <span class="log-kind">SYS</span>
       <span class="log-msg">Arena reset. Awaiting attack.</span>
     </div>`;
-  document.getElementById('report-content').textContent = 'Awaiting detection event...';
-  document.getElementById('report-content').className = '';
+  const rc = document.getElementById('report-content');
+  rc.textContent = 'Awaiting detection event...';
+  rc.style.color = 'var(--grey)';
   document.getElementById('report-badge').textContent = 'STANDBY';
   document.getElementById('report-badge').className = 'panel-badge badge-blue';
+  lastRingId = null;
+  lastFlaggedAccounts = [];
   document.getElementById('idle-overlay').style.display = 'flex';
   document.getElementById('rules-list').innerHTML = '';
   knownRules.clear();

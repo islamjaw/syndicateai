@@ -98,17 +98,19 @@ class TransactionScorer(BaseAgent):
 
         X, y = self._prepare_features(df, fit=True)
 
-        if SMOTE_AVAILABLE:
-            self.log('Applying SMOTE to balance fraud/legit classes...')
-            sm   = SMOTE(random_state=42, k_neighbors=5)
-            X, y = sm.fit_resample(X, y)
-            self.log(f'After SMOTE: {len(X):,} samples')
-        else:
-            self.log('imblearn not installed — skipping SMOTE (install: pip install imbalanced-learn)')
-
+        # Split FIRST — test set must never see SMOTE synthetic samples
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
         )
+
+        # SMOTE only on training data
+        if SMOTE_AVAILABLE:
+            self.log('Applying SMOTE to training set only...')
+            sm = SMOTE(random_state=42, k_neighbors=min(5, sum(y_train==1)-1))
+            X_train, y_train = sm.fit_resample(X_train, y_train)
+            self.log(f'After SMOTE: {len(X_train):,} training samples')
+        else:
+            self.log('imblearn not installed — skipping SMOTE')
 
         # ── Train primary model ──────────────────────────────────────
         if XGBOOST_AVAILABLE:
@@ -127,11 +129,16 @@ class TransactionScorer(BaseAgent):
             )
         else:
             self.log('XGBoost not available — training GradientBoosting...')
-            self.model = GradientBoostingClassifier(
-                n_estimators=200,
-                max_depth=5,
-                learning_rate=0.1,
+            self.model = XGBClassifier(
+                n_estimators=300,
+                max_depth=6,
+                learning_rate=0.08,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                scale_pos_weight=1,
+                eval_metric='logloss',
                 random_state=42,
+                n_jobs=-1,
             )
 
         self.model.fit(X_train, y_train)

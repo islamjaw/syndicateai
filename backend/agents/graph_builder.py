@@ -194,3 +194,14 @@ class GraphBuilder(BaseAgent):
             }})
 
         return {'nodes': nodes, 'edges': edges}
+    
+    def get_node_centrality_dict(self) -> dict:
+        """Returns {account_id: {pagerank, betweenness, in_centrality}} for all nodes."""
+        return {
+            node: {
+                'pagerank':      data.get('pagerank', 0.0),
+                'betweenness':   data.get('betweenness', 0.0),
+                'in_centrality': data.get('in_centrality', 0.0)
+            }
+            for node, data in self.graph.nodes(data=True)
+        }
