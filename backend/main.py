@@ -14,7 +14,7 @@ from pydantic import BaseModel
 sys.path.append('.')
 from agents.graph_builder import GraphBuilder
 from agents.ring_scout import RingScout
-from agents.investigation_agent import InvestigationAgent
+from agents.investigation_agent import InvestigationAgent, GOVERNANCE_LOG
 from agents.fraud_gpt import FraudGPT
 from agents.defense_ai import DefenseAI
 
@@ -128,17 +128,29 @@ async def run_one_round(difficulty=1):
         })
         seeded += 1
 
-    # 1. FraudGPT generates an attack
+    # 1. FraudGPT generates an attack — pass memory context
     was_detected_last = battle_state['last_attack'] is not None and \
                         battle_state.get('last_detected', False)
+    was_evaded_last   = battle_state['last_attack'] is not None and \
+                        not battle_state.get('last_detected', True)
 
-    attack_input = {'difficulty': difficulty}
+    # Always pass active rules so FraudGPT knows what to evade
+    attack_input = {
+        'difficulty':   difficulty,
+        'active_rules': ring_scout.rules
+    }
     if was_detected_last:
-        attack_input = {
-            'was_detected': True,
-            'previous_attack': battle_state['last_attack'],
-            'detection_reason': battle_state.get('last_detection_reason', 'pattern detected')
-        }
+        attack_input.update({
+            'was_detected':      True,
+            'previous_attack':   battle_state['last_attack'],
+            'detection_reason':  battle_state.get('last_detection_reason', 'pattern detected'),
+            'active_rules':      ring_scout.rules
+        })
+    elif was_evaded_last:
+        attack_input.update({
+            'was_evaded':      True,
+            'previous_attack': battle_state['last_attack']
+        })
 
     attack = await fraud_gpt.execute(attack_input)
     battle_state['attacks_launched'] += 1
@@ -258,6 +270,28 @@ def get_log():
     return {'log': battle_state['log']}
 
 
+@app.get('/governance')
+def get_governance():
+    """IBM watsonx.governance compatible audit log."""
+    return {
+        'total_entries':   len(GOVERNANCE_LOG),
+        'entries':         GOVERNANCE_LOG,
+        'summary': {
+            'total_flagged':        len(GOVERNANCE_LOG),
+            'high_confidence':      sum(1 for e in GOVERNANCE_LOG if (e.get('suspicion_score') or 0) >= 80),
+            'human_review_needed':  sum(1 for e in GOVERNANCE_LOG if e.get('human_review_required')),
+            'ml_assisted':          sum(1 for e in GOVERNANCE_LOG if e.get('ml_active')),
+            'demographic_audits':   sum(1 for e in GOVERNANCE_LOG if e.get('demographic_risk') == 'unknown — audit required')
+        }
+    }
+
+
+@app.get('/fraudgpt/memory')
+def get_fraudgpt_memory():
+    """Expose FraudGPT's attack memory — shows the red team learning."""
+    return fraud_gpt.get_memory_state()
+
+
 # -----------------------------------------------------------------------
 # SSE streaming endpoint — streams the battle log live to the frontend
 # -----------------------------------------------------------------------
@@ -347,11 +381,6 @@ async def startup_event():
     noise_state['running'] = True
     asyncio.create_task(_noise_loop())
 
-@app.on_event('shutdown')
-async def shutdown_event():
-    """Ensure background tasks stop cleanly on Ctrl+C"""
-    noise_state['running'] = False
-    battle_state['running'] = False
 
 async def _auto_battle():
     """Runs rounds automatically, escalating difficulty over time."""
