@@ -3,881 +3,704 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>SyndicateAI — Fraud Detection</title>
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<title>OffBooksAI</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <style>
-:root {
-  --bg:#080b12;--bg2:#0d1220;--bg3:#131926;--bg4:#1a2235;
-  --border:#1e2d47;--border2:#2a3f62;
-  --text:#e2ecf8;--text2:#7a95b8;--text3:#3a5070;
-  --cyan:#00c8f0;--red:#ff3355;--green:#00e080;--amber:#ffb800;--purple:#a278ff;--orange:#ff7a45;
+:root{
+  --black:#080808;
+  --card:#0f0f0f;
+  --card2:#141414;
+  --border:#1f1f1f;
+  --border2:#2a2a2a;
+  --text:#f0f0f0;
+  --text2:#999;
+  --text3:#666;
+  --purple:#8b5cf6;
+  --purple2:#7c3aed;
+  --purple-glow:rgba(139,92,246,.15);
+  --red:#ff2d55;
+  --green:#00d474;
+  --amber:#f5a623;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+body{font-family:'Inter',sans-serif;background:var(--black);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 
-/* Header */
-.hdr{height:56px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;flex-shrink:0;}
-.logo{font-size:18px;font-weight:700;color:var(--text);white-space:nowrap;letter-spacing:.5px;}
-.logo span{color:var(--cyan);}
-.tabs{display:flex;gap:4px;}
-.tab{padding:7px 20px;font-size:12px;font-weight:500;background:transparent;border:1px solid transparent;border-radius:6px;color:var(--text2);cursor:pointer;transition:.15s;font-family:'Sora',sans-serif;}
-.tab:hover{color:var(--text);background:var(--bg3);}
-.tab.on{background:var(--bg4);border-color:var(--border2);color:var(--cyan);}
-.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
-.sdot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;}
-.sdot.on{background:var(--green);} .sdot.off{background:var(--red);}
-.reset-btn{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;font-family:'Sora',sans-serif;transition:.15s;}
-.reset-btn:hover{border-color:var(--red);color:var(--red);background:rgba(255,51,85,.05);}
+/* ── NAV ── */
+nav{height:72px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:0;flex-shrink:0;background:var(--black);}
+.nav-brand{display:flex;align-items:center;gap:12px;margin-right:48px;}
+.nav-name{font-size:26px;font-weight:700;letter-spacing:-.3px;}
+.nav-name span{color:var(--text2);font-weight:400;font-size:13px;display:block;letter-spacing:.5px;text-transform:uppercase;margin-top:-1px;}
+.nav-tabs{display:flex;gap:1px;flex:1;}
+.ntab{padding:9px 22px;font-size:15px;font-weight:500;background:transparent;border:none;border-radius:6px;color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.2px;transition:.15s;}
+.ntab:hover{color:var(--text);background:var(--card);}
+.ntab.on{color:var(--text);background:var(--card);font-weight:600;}
+.nav-r{display:flex;align-items:center;gap:12px;}
+.conn{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);font-family:'JetBrains Mono',monospace;letter-spacing:.3px;}
+.cdot{width:8px;height:8px;border-radius:50%;background:var(--text3);}
+.cdot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+.cdot.off{background:var(--red);}
+.rst-btn{padding:8px 18px;background:transparent;border:1px solid var(--border2);border-radius:20px;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px;transition:.15s;}
+.rst-btn:hover{border-color:var(--red);color:var(--red);}
 
-/* Battle-hardened badge */
-.bhardened{display:none;align-items:center;gap:8px;padding:8px 14px;background:rgba(0,200,240,.05);border-bottom:1px solid rgba(0,200,240,.12);font-size:11px;color:var(--text2);flex-shrink:0;}
-.bhardened-icon{font-size:14px;}
-.bhardened-text strong{color:var(--cyan);}
-.bhardened-pills{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
-.bhardened-pill{font-size:9px;padding:2px 8px;border-radius:3px;background:rgba(0,200,240,.1);border:1px solid rgba(0,200,240,.25);color:var(--cyan);font-family:'JetBrains Mono',monospace;}
-
-/* Report popup button */
-.rep-btn{margin:10px 12px 0;padding:10px 16px;background:rgba(162,120,255,.08);border:1px solid rgba(162,120,255,.2);border-radius:8px;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:'Sora',sans-serif;transition:.15s;display:none;text-align:left;width:calc(100% - 24px);}
-.rep-btn:hover{background:rgba(162,120,255,.14);border-color:rgba(162,120,255,.4);color:var(--text);}
-.rep-btn.ready{display:block;}
-.rep-btn-icon{margin-right:6px;}
-
-/* Modal overlay */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;}
-.modal-overlay.on{display:flex;}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;animation:popIn .2s ease;}
-.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;}
-.modal-title{font-size:15px;font-weight:600;color:var(--text);flex:1;}
-.modal-close{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s;font-family:'Sora',sans-serif;}
-.modal-close:hover{background:rgba(255,51,85,.1);border-color:var(--red);color:var(--red);}
-.modal-meta{display:flex;gap:10px;padding:12px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;}
-.modal-tag{padding:4px 10px;border-radius:5px;font-size:11px;font-weight:500;}
-.modal-tag.caught{background:rgba(0,224,128,.08);border:1px solid rgba(0,224,128,.2);color:var(--green);}
-.modal-tag.score{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
-.modal-tag.pattern{background:rgba(255,51,85,.07);border:1px solid rgba(255,51,85,.18);color:var(--text);}
-.modal-body{flex:1;overflow-y:auto;padding:20px;font-size:13px;line-height:1.85;color:var(--text2);white-space:pre-wrap;}
-.modal-body.live{color:var(--text);}
-.modal-streaming{display:flex;align-items:center;gap:8px;padding:10px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);flex-shrink:0;}
-.pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse .9s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
-
-/* Panes */
+/* ── Panes ── */
 .pane{display:none;flex:1;flex-direction:column;overflow:hidden;}
 .pane.on{display:flex;}
 
-/* ── ATTACK MODE ── */
-.atk-top{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px;flex-shrink:0;flex-wrap:wrap;}
-.atk-lbl{font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;}
-.lvl-btns{display:flex;gap:6px;}
-.lvl{padding:6px 16px;border-radius:20px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;font-family:'Sora',sans-serif;}
-.lvl:hover{border-color:var(--cyan);color:var(--cyan);}
-.lvl.on{background:var(--cyan);border-color:var(--cyan);color:var(--bg);font-weight:600;}
-.lvl-desc{font-size:12px;color:var(--text2);flex:1;font-style:italic;}
-.go-btn{padding:10px 28px;background:var(--red);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;white-space:nowrap;transition:.15s;}
-.go-btn:hover{background:#e02040;} .go-btn:disabled{opacity:.4;cursor:not-allowed;}
+/* ════════════════════════════════
+   BATTLE MODE
+════════════════════════════════ */
+.b-top{display:flex;align-items:center;padding:20px 32px;gap:28px;flex-shrink:0;border-bottom:1px solid var(--border);}
 
-.score-strip{display:flex;gap:10px;padding:12px 24px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;align-items:stretch;}
-.sc{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 20px;}
-.sc-n{font-size:24px;font-weight:700;line-height:1;}
-.sc-l{font-size:11px;color:var(--text2);margin-top:2px;}
-.sc.G .sc-n{color:var(--green);} .sc.R .sc-n{color:var(--red);} .sc.A .sc-n{color:var(--amber);} .sc.C .sc-n{color:var(--cyan);}
-.ml-chip{margin-left:auto;background:rgba(162,120,255,.08);border:1px solid rgba(162,120,255,.2);border-radius:8px;padding:10px 16px;display:flex;flex-direction:column;gap:2px;}
-.ml-chip-t{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--purple);}
-.ml-chip-v{font-size:12px;font-weight:600;color:var(--text);}
+/* Big start button — NanoTrade style */
+.battle-btn{padding:12px 28px;border:none;border-radius:100px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px;transition:.15s;white-space:nowrap;}
+.battle-btn.go{background:var(--purple);color:#fff;box-shadow:0 0 20px var(--purple-glow);}
+.battle-btn.go:hover{background:var(--purple2);box-shadow:0 0 30px rgba(139,92,246,.3);}
+.battle-btn.stop{background:var(--red);color:#fff;}
+.battle-btn.stop:hover{opacity:.85;}
 
-.atk-body{flex:1;display:grid;grid-template-columns:1fr 400px;overflow:hidden;min-height:0;}
+/* Score display */
+.score-row{display:flex;gap:12px;}
+.score-card{padding:10px 18px;border-radius:12px;border:1px solid var(--border);}
+.score-card.red{background:rgba(255,45,85,.05);border-color:rgba(255,45,85,.15);}
+.score-card.blue{background:rgba(139,92,246,.05);border-color:rgba(139,92,246,.2);}
+.sc-top{display:flex;align-items:baseline;gap:10px;}
+.sc-n{font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1;}
+.score-card.red .sc-n{color:var(--red);}
+.score-card.blue .sc-n{color:var(--purple);}
+.sc-lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+.score-card.red .sc-lbl{color:rgba(255,45,85,.6);}
+.score-card.blue .sc-lbl{color:rgba(139,92,246,.6);}
+.sc-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace;}
 
-/* Graph col */
-.gcol{display:flex;flex-direction:column;border-right:1px solid var(--border);overflow:hidden;}
-.gcol-hdr{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+/* Separator */
+.sep{width:1px;height:48px;background:var(--border);}
+
+/* Small counters */
+.mini-stat{text-align:center;}
+.mini-n{font-size:36px;font-weight:700;letter-spacing:-.5px;color:var(--text);}
+.mini-n.purple{color:var(--purple);}
+.mini-l{font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+/* Battle body */
+.b-body{flex:1;display:grid;grid-template-columns:1fr 280px;overflow:hidden;min-height:0;}
+
+/* Graph area */
+.g-wrap{display:flex;flex-direction:column;overflow:hidden;}
+.g-bar{display:flex;align-items:center;padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.g-bar-l{font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.g-bar-r{margin-left:auto;font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
 .gsvg{flex:1;width:100%;min-height:0;}
-.gleg{display:flex;flex-wrap:wrap;gap:12px;padding:8px 16px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
-.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
-.ld{width:10px;height:10px;border-radius:50%;}
+.g-legend{display:flex;gap:16px;padding:7px 16px;border-top:1px solid var(--border);flex-shrink:0;}
+.leg-i{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);}
+.leg-d{width:8px;height:8px;border-radius:50%;}
+.rules-bar{border-top:1px solid var(--border);padding:8px 16px;flex-shrink:0;}
+.rules-hdr{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+.new-badge{background:var(--purple);color:#fff;font-size:8px;font-weight:700;padding:1px 7px;border-radius:100px;display:none;}
+.rules-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.rchip{padding:3px 12px;border-radius:100px;font-size:11px;font-family:'JetBrains Mono',monospace;}
+.rchip.base{background:var(--card);border:1px solid var(--border);color:var(--text2);}
+.rchip.new_{background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);color:var(--purple);}
 
-/* Story col */
-.scol{display:flex;flex-direction:column;overflow:hidden;}
+/* Sidebar */
+.b-side{border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;background:var(--black);}
 
-.oc{margin:12px;border-radius:10px;padding:13px 16px;display:none;flex-direction:column;gap:8px;}
-.oc.caught{background:rgba(0,224,128,.06);border:1px solid rgba(0,224,128,.18);}
-.oc.evaded{background:rgba(255,184,0,.06);border:1px solid rgba(255,184,0,.18);}
-.oc-row{display:flex;align-items:center;gap:12px;}
-.oc-icon{font-size:24px;}
-.oc-main{flex:1;}
-.oc-title{font-size:14px;font-weight:700;}
-.oc.caught .oc-title{color:var(--green);} .oc.evaded .oc-title{color:var(--amber);}
-.oc-sub{font-size:11px;color:var(--text2);margin-top:3px;line-height:1.5;}
-.oc-score-wrap{text-align:right;}
-.oc-score{font-size:28px;font-weight:700;line-height:1;}
-.oc.caught .oc-score{color:var(--green);} .oc.evaded .oc-score{color:var(--amber);}
-.oc-score-l{font-size:10px;color:var(--text2);}
+.agent-block{padding:16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.ab-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.ab-name{font-size:14px;font-weight:700;letter-spacing:.3px;}
+.ab-name.red{color:var(--red);}
+.ab-name.purple{color:var(--purple);}
+.ab-tag{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:100px;cursor:pointer;font-family:'JetBrains Mono',monospace;border:1px solid var(--border2);color:var(--text2);background:transparent;transition:.12s;}
+.ab-tag:hover{border-color:var(--border2);color:var(--text);background:var(--card);}
+.ab-status{font-size:13px;color:var(--text2);line-height:1.5;}
+.ab-status strong{color:var(--text);font-weight:600;}
 
-.wh{padding:0 12px 10px;flex-shrink:0;display:none;}
-.wh-lbl{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:7px;}
-.wh-chips{display:flex;flex-wrap:wrap;gap:6px;}
-.chip{padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500;background:rgba(255,51,85,.07);border:1px solid rgba(255,51,85,.18);color:var(--text);cursor:default;}
-.chip:hover{background:rgba(255,51,85,.14);}
+.feed-label{padding:10px 16px 6px;font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.feed{flex:1;overflow-y:auto;padding:0 10px 10px;}
+.fi{padding:8px 10px;border-radius:8px;margin-bottom:4px;line-height:1.5;animation:fadeUp .2s ease;}
+.fi.R{background:rgba(255,45,85,.04);border:1px solid rgba(255,45,85,.08);}
+.fi.B{background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.08);}
+.fi-t{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:2px;font-family:'JetBrains Mono',monospace;}
+.fi.R .fi-t{color:rgba(255,45,85,.7);} .fi.B .fi-t{color:rgba(139,92,246,.7);}
+.fi-b{font-size:12px;color:var(--text2);}
 
-.rep-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;border-top:1px solid var(--border);}
-.rep-hdr{padding:10px 14px;font-size:11px;font-weight:600;letter-spacing:.4px;text-transform:uppercase;color:var(--text2);border-bottom:1px solid var(--border);flex-shrink:0;}
-.rep-body{flex:1;overflow-y:auto;padding:14px;font-size:12px;line-height:1.85;color:var(--text2);}
-.rep-body.live{color:var(--text);}
-.rep-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);text-align:center;padding:20px;}
-.re-icon{font-size:36px;} .re-t{font-size:13px;color:var(--text2);font-weight:500;} .re-s{font-size:11px;}
+/* ════════════════════════════════
+   ATTACK MODE
+════════════════════════════════ */
+.a-top{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;flex-shrink:0;}
+.a-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.lvl-group{display:flex;gap:4px;}
+.lvl{padding:6px 14px;border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.2px;transition:.15s;}
+.lvl:hover{border-color:var(--purple);color:var(--purple);}
+.lvl.on{background:var(--purple);border-color:var(--purple);color:#fff;}
+.lvl-desc{font-size:11px;color:var(--text3);flex:1;font-style:italic;}
+.launch{padding:11px 26px;background:var(--purple);border:none;border-radius:100px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;letter-spacing:.3px;white-space:nowrap;transition:.15s;box-shadow:0 0 20px var(--purple-glow);}
+.launch:hover{background:var(--purple2);box-shadow:0 0 30px rgba(139,92,246,.3);}
+.launch:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;}
 
-/* ── BATTLE MODE ── */
-.btop{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 24px;display:flex;align-items:center;gap:14px;flex-shrink:0;}
-.bbtn{padding:9px 24px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;font-family:'Sora',sans-serif;transition:.15s;}
-.bbtn.go{background:var(--green);color:#030e06;} .bbtn.stop{background:var(--red);color:#fff;}
-.bbtn:hover{opacity:.85;}
-.rnd-pill{font-size:12px;font-weight:500;color:var(--text2);padding:6px 14px;border:1px solid var(--border);border-radius:20px;}
-.rnd-pill strong{color:var(--text);}
-.btop-desc{font-size:11px;color:var(--text2);max-width:240px;line-height:1.45;}
-.sboard{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.sb{padding:8px 18px;text-align:center;min-width:125px;}
-.sb.r{background:rgba(255,51,85,.07);border-right:1px solid var(--border);}
-.sb.b{background:rgba(0,200,240,.07);}
-.sb-lbl{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
-.sb.r .sb-lbl{color:var(--red);} .sb.b .sb-lbl{color:var(--cyan);}
-.sb-n{font-size:26px;font-weight:700;line-height:1;}
-.sb.r .sb-n{color:var(--red);} .sb.b .sb-n{color:var(--cyan);}
-.sb-sub{font-size:9px;color:var(--text3);margin-top:2px;}
-.bstats{margin-left:auto;display:flex;gap:18px;}
-.bst{text-align:center;}
-.bst-l{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
-.bst-n{font-size:18px;font-weight:700;}
+/* Stats strip */
+.a-stats{display:flex;gap:1px;flex-shrink:0;border-bottom:1px solid var(--border);}
+.asc{flex:1;padding:14px 20px;border-right:1px solid var(--border);}
+.asc:last-child{border-right:none;}
+.asc-n{font-size:28px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.asc-l{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);margin-top:3px;font-family:'JetBrains Mono',monospace;}
+.asc.g .asc-n{color:var(--green);}
+.asc.r .asc-n{color:var(--red);}
+.asc.p .asc-n{color:var(--purple);}
+.asc.a .asc-n{color:var(--amber);}
 
-.bbody{flex:1;display:grid;grid-template-columns:275px 1fr 275px;overflow:hidden;min-height:0;}
+/* Battle-hardened */
+.bh{display:none;padding:8px 20px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);flex-shrink:0;background:rgba(139,92,246,.03);}
+.bh strong{color:var(--purple);}
+.bh-pills{display:inline-flex;flex-wrap:wrap;gap:4px;margin-left:6px;}
+.bh-pill{font-size:9px;padding:1px 8px;border-radius:100px;background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.2);color:var(--purple);font-family:'JetBrains Mono',monospace;}
 
-/* Agent panels */
-.ap{display:flex;flex-direction:column;overflow:hidden;}
-.ap.red{border-right:1px solid var(--border);} .ap.blue{border-left:1px solid var(--border);}
-.ap-detail-btn{padding:3px 10px;background:transparent;border:1px solid rgba(255,51,85,.3);border-radius:4px;color:var(--red);font-size:10px;font-weight:500;cursor:pointer;font-family:'Sora',sans-serif;transition:.15s;}
-.ap-detail-btn:hover{background:rgba(255,51,85,.08);}
-.ap-detail-btn-blue{border-color:rgba(0,200,240,.3);color:var(--cyan);}
-.ap-detail-btn-blue:hover{background:rgba(0,200,240,.08);}
-.ap-name{font-size:15px;font-weight:700;}
-.ap.red .ap-name{color:var(--red);} .ap.blue .ap-name{color:var(--cyan);}
-.ap-role{font-size:10px;color:var(--text2);margin-top:2px;line-height:1.4;}
+/* Attack body */
+.a-body{flex:1;display:grid;grid-template-columns:1fr 340px;overflow:hidden;min-height:0;}
+.a-right{display:flex;flex-direction:column;border-left:1px solid var(--border);overflow:hidden;}
 
-.think{margin:10px;padding:10px 12px;border-radius:8px;font-size:11px;line-height:1.6;flex-shrink:0;}
-.ap.red .think{background:rgba(255,51,85,.05);border:1px solid rgba(255,51,85,.1);}
-.ap.blue .think{background:rgba(0,200,240,.05);border:1px solid rgba(0,200,240,.1);}
-.think-l{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
-.ap.red .think-l{color:var(--red);} .ap.blue .think-l{color:var(--cyan);}
-.think-t{color:var(--text2);}
-.think-t strong{color:var(--text);}
+/* Outcome card */
+.oc{margin:14px;border-radius:14px;padding:16px;display:none;}
+.oc.caught{background:rgba(0,212,116,.04);border:1px solid rgba(0,212,116,.12);}
+.oc.evaded{background:rgba(245,166,35,.04);border:1px solid rgba(245,166,35,.12);}
+.oc-row{display:flex;align-items:flex-start;justify-content:space-between;}
+.oc-title{font-size:15px;font-weight:800;letter-spacing:-.3px;}
+.oc.caught .oc-title{color:var(--green);}
+.oc.evaded .oc-title{color:var(--amber);}
+.oc-sub{font-size:10px;color:var(--text2);margin-top:5px;line-height:1.5;font-family:'JetBrains Mono',monospace;}
+.oc-score{text-align:right;flex-shrink:0;}
+.oc-score-n{font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1;}
+.oc.caught .oc-score-n{color:var(--green);}
+.oc.evaded .oc-score-n{color:var(--amber);}
+.oc-score-l{font-size:9px;color:var(--text3);font-family:'JetBrains Mono',monospace;letter-spacing:.4px;text-transform:uppercase;margin-top:2px;}
 
-.mem{padding:0 10px;flex-shrink:0;margin-bottom:4px;}
-.mem-lbl{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text3);margin:7px 4px 4px;}
-.mem-list{max-height:72px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;}
-.mr{font-size:10px;padding:3px 8px;border-radius:4px;line-height:1.4;color:var(--text2);}
-.mr.fail{background:rgba(255,51,85,.05);}
-.mr.fail::before{content:"✗  ";color:var(--red);}
-.mr.win{background:rgba(0,224,128,.05);}
-.mr.win::before{content:"✓  ";color:var(--green);}
-.mr.rule{background:rgba(0,200,240,.05);color:var(--cyan);}
-.mr.rule::before{content:"+ ";color:var(--cyan);}
-.mr.empty{color:var(--text3);font-style:italic;}
+/* Pattern chips */
+.pat-wrap{padding:0 14px 12px;display:none;flex-shrink:0;}
+.pat-lbl{font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:7px;}
+.pat-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.pchip{padding:4px 12px;border-radius:100px;font-size:10px;font-weight:500;background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.15);color:var(--text);letter-spacing:.1px;}
 
-.fdiv{height:1px;background:var(--border);margin:6px 10px;}
-.flbl{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:0 14px;margin-bottom:3px;flex-shrink:0;}
-.ap.red .flbl{color:var(--red);} .ap.blue .flbl{color:var(--cyan);}
-.feed{flex:1;overflow-y:auto;padding:5px 10px;}
-.fi{font-size:11px;padding:6px 10px;border-radius:6px;margin-bottom:4px;line-height:1.55;animation:popIn .3s ease;}
-.fi.R{background:rgba(255,51,85,.04);border-left:2px solid rgba(255,51,85,.35);}
-.fi.B{background:rgba(0,200,240,.04);border-left:2px solid rgba(0,200,240,.35);}
-.fi-t{font-size:9px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;margin-bottom:2px;}
-.fi.R .fi-t{color:var(--red);} .fi.B .fi-t{color:var(--cyan);}
-.fi-b{color:var(--text2);}
+/* Report button */
+.rep-btn{display:none;margin:0 14px;padding:12px 18px;background:transparent;border:1px solid var(--border2);border-radius:12px;color:var(--text2);font-size:12px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;text-align:left;transition:.15s;}
+.rep-btn.on{display:block;}
+.rep-btn:hover{border-color:var(--purple);color:var(--purple);background:var(--purple-glow);}
+.rep-btn::after{content:' →';opacity:.5;}
 
-/* Center graph */
-.cc{display:flex;flex-direction:column;overflow:hidden;}
-.cc-hdr{font-size:11px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:8px;}
+/* Placeholder */
+.a-ph{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:32px;}
+.a-ph-t{font-size:14px;font-weight:600;color:var(--text2);}
+.a-ph-s{font-size:11px;color:var(--text3);}
 
-.rules-strip{border-top:1px solid var(--border);padding:8px 12px;flex-shrink:0;background:var(--bg2);}
-.rs-hdr{font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:5px;display:flex;align-items:center;gap:6px;}
-.rs-new{background:var(--cyan);color:var(--bg);font-size:8px;font-weight:700;padding:1px 6px;border-radius:3px;display:none;}
-.rs-list{display:flex;flex-wrap:wrap;gap:4px;max-height:58px;overflow-y:auto;}
-.rp{padding:3px 10px;border-radius:4px;font-size:10px;}
-.rp.base{background:var(--bg3);border:1px solid var(--border);color:var(--text2);}
-.rp.new_{background:rgba(0,200,240,.09);border:1px solid rgba(0,200,240,.28);color:var(--cyan);animation:popIn .4s ease;}
-
-.bleg{display:flex;flex-wrap:wrap;gap:10px;padding:6px 12px;border-top:1px solid var(--border);background:var(--bg2);flex-shrink:0;}
+/* ════════════════════════════════
+   MODALS
+════════════════════════════════ */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.overlay.on{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:620px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;animation:scaleIn .18s ease;}
+.modal-top{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;}
+.modal-ttl{font-size:14px;font-weight:700;flex:1;letter-spacing:-.2px;}
+.modal-x{width:28px;height:28px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.12s;}
+.modal-x:hover{background:var(--card2);color:var(--text);}
+.modal-tags{display:flex;gap:6px;padding:10px 22px;border-bottom:1px solid var(--border);flex-wrap:wrap;flex-shrink:0;}
+.mtag{padding:3px 11px;border-radius:100px;font-size:10px;font-weight:600;letter-spacing:.2px;}
+.mtag.g{background:rgba(0,212,116,.07);border:1px solid rgba(0,212,116,.2);color:var(--green);}
+.mtag.gray{background:var(--card2);border:1px solid var(--border);color:var(--text2);}
+.mtag.dim{background:rgba(255,45,85,.06);border:1px solid rgba(255,45,85,.15);color:var(--text);}
+.modal-body{flex:1;overflow-y:auto;padding:22px;font-size:13px;line-height:1.85;color:var(--text2);white-space:pre-wrap;}
+.modal-body.live{color:var(--text);}
+.modal-foot{display:flex;align-items:center;gap:8px;padding:12px 22px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--purple);animation:pulse .9s ease-in-out infinite;}
 
 /* Tooltip */
-#tip{position:fixed;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 13px;font-size:11px;pointer-events:none;z-index:999;line-height:1.7;max-width:220px;display:none;}
-#tip-n{font-weight:600;margin-bottom:4px;}
+#tip{position:fixed;background:var(--card2);border:1px solid var(--border2);border-radius:10px;padding:10px 13px;font-size:11px;pointer-events:none;z-index:999;line-height:1.65;max-width:200px;display:none;}
+#tip-n{font-weight:700;margin-bottom:4px;letter-spacing:-.1px;}
 #tip-b{color:var(--text2);}
 
-@keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-.spin{animation:spin .8s linear infinite;display:inline-block;}
-::-webkit-scrollbar{width:3px;height:3px;}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+::-webkit-scrollbar{width:3px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 ::-webkit-scrollbar-track{background:transparent;}
 </style>
 </head>
 <body>
 
-<header class="hdr">
-  <div class="logo">Syndicate<span>AI</span></div>
-  <nav class="tabs">
-    <button class="tab on" onclick="goTab('battle',this)">Watch the AIs Fight</button>
-    <button class="tab" onclick="goTab('attack',this)">Try an Attack</button>
-  </nav>
-  <div class="hdr-right">
-    <button class="reset-btn" onclick="doReset()" title="Reset all stats and clear the graph">↺ Reset</button>
-    <div class="sdot" id="sdot"></div>
-    <span id="stxt">Connecting…</span>
+<nav>
+  <div class="nav-brand">
+    <div class="nav-name">OffBooksAI<span>FRAUD DETECTION</span></div>
   </div>
-</header>
+  <div class="nav-tabs">
+    <button class="ntab on" onclick="goTab('battle',this)">Watch the AIs Fight</button>
+    <button class="ntab"    onclick="goTab('attack',this)">Try an Attack</button>
+  </div>
+  <div class="nav-r">
+    <button class="rst-btn" onclick="doReset()">Reset</button>
+    <div class="conn">
+      <div class="cdot" id="sdot"></div>
+      <span id="stxt">Connecting…</span>
+    </div>
+  </div>
+</nav>
 
-<!-- ═══════════════════════════════════
-     TAB 1: TRY AN ATTACK
-═══════════════════════════════════ -->
+<!-- ════════════════════
+     BATTLE
+════════════════════ -->
+<div id="pane-battle" class="pane on">
+
+  <div class="b-top">
+    <button class="battle-btn go" id="bbtn" onclick="toggleBattle()">Start Battle</button>
+
+    <div class="score-row">
+      <div class="score-card red">
+        <div class="sc-top">
+          <div class="sc-n" id="b-eva">0</div>
+          <div class="sc-lbl">Fraudster AI</div>
+        </div>
+        <div class="sc-sub">slipped through</div>
+      </div>
+      <div class="score-card blue">
+        <div class="sc-top">
+          <div class="sc-n" id="b-det">0</div>
+          <div class="sc-lbl">Defender AI</div>
+        </div>
+        <div class="sc-sub">detections</div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+    <div class="mini-stat"><div class="mini-n" id="b-atk">0</div><div class="mini-l">Attacks</div></div>
+    <div class="mini-stat"><div class="mini-n purple" id="b-rules">0</div><div class="mini-l">New Rules</div></div>
+  </div>
+
+  <div class="b-body">
+
+    <div class="g-wrap">
+      <div class="g-bar">
+        <div class="g-bar-l">Live Money Flow</div>
+        <div class="g-bar-r" id="b-ginfo"></div>
+      </div>
+      <svg id="gsvg-battle" class="gsvg"></svg>
+      <div class="g-legend">
+        <div class="leg-i"><div class="leg-d" style="background:#00d474"></div>Normal</div>
+        <div class="leg-i"><div class="leg-d" style="background:#ff2d55"></div>Fraud ring</div>
+        <div class="leg-i"><div class="leg-d" style="background:#a78bfa"></div>Mule</div>
+        <div class="leg-i"><div class="leg-d" style="background:#ff7a45"></div>Source</div>
+      </div>
+      <div class="rules-bar">
+        <div class="rules-hdr">
+          Detection Rules
+          <span id="b-rcnt" style="font-weight:400;color:var(--text3);"></span>
+          <span class="new-badge" id="rs-new">NEW</span>
+        </div>
+        <div class="rules-chips" id="b-rlist"></div>
+      </div>
+    </div>
+
+    <div class="b-side">
+      <div class="agent-block">
+        <div class="ab-hdr">
+          <div class="ab-name red">FraudGPT</div>
+          <button class="ab-tag" onclick="openAgentModal('fraud')">Details</button>
+        </div>
+        <div class="ab-status" id="fg-status">Waiting to start…</div>
+      </div>
+      <div class="agent-block">
+        <div class="ab-hdr">
+          <div class="ab-name purple">DefenseAI</div>
+          <button class="ab-tag" onclick="openAgentModal('defense')">Details</button>
+        </div>
+        <div class="ab-status" id="da-status">Waiting to start…</div>
+      </div>
+      <div class="feed-label">Activity</div>
+      <div class="feed" id="b-feed"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════
+     ATTACK
+════════════════════ -->
 <div id="pane-attack" class="pane">
 
-  <div class="atk-top">
-    <span class="atk-lbl">Attack level:</span>
-    <div class="lvl-btns" id="lvlbtns">
-      <button class="lvl on" data-d="1" onclick="setDiff(1)">Level 1</button>
-      <button class="lvl"    data-d="2" onclick="setDiff(2)">Level 2</button>
-      <button class="lvl"    data-d="3" onclick="setDiff(3)">Level 3</button>
-      <button class="lvl"    data-d="4" onclick="setDiff(4)">Level 4</button>
-      <button class="lvl"    data-d="5" onclick="setDiff(5)">Level 5</button>
+  <div class="a-top">
+    <div class="a-lbl">Attack Level</div>
+    <div class="lvl-group" id="lvlbtns">
+      <button class="lvl on" data-d="1" onclick="setDiff(1)">1</button>
+      <button class="lvl"    data-d="2" onclick="setDiff(2)">2</button>
+      <button class="lvl"    data-d="3" onclick="setDiff(3)">3</button>
+      <button class="lvl"    data-d="4" onclick="setDiff(4)">4</button>
+      <button class="lvl"    data-d="5" onclick="setDiff(5)">5</button>
     </div>
     <span class="lvl-desc" id="lvldesc">One account splits money to 5 others at once — the simplest trick in the book</span>
-    <button class="go-btn" id="gobtn" onclick="doAttack()">Launch Attack →</button>
+    <button class="launch" id="gobtn" onclick="doAttack()">Launch Attack</button>
   </div>
 
-  <div class="score-strip">
-    <div class="sc C"><div class="sc-n" id="a-tot">0</div><div class="sc-l">Attacks tried</div></div>
-    <div class="sc G"><div class="sc-n" id="a-det">0</div><div class="sc-l">Caught</div></div>
-    <div class="sc R"><div class="sc-n" id="a-eva">0</div><div class="sc-l">Slipped through</div></div>
-    <div class="sc A"><div class="sc-n" id="a-rate">—</div><div class="sc-l">Catch rate</div></div>
+  <div class="a-stats">
+    <div class="asc"><div class="asc-n" id="a-tot">0</div><div class="asc-l">Attacks</div></div>
+    <div class="asc g"><div class="asc-n" id="a-det">0</div><div class="asc-l">Caught</div></div>
+    <div class="asc r"><div class="asc-n" id="a-eva">0</div><div class="asc-l">Slipped</div></div>
+    <div class="asc p"><div class="asc-n" id="a-rate">—</div><div class="asc-l">Catch Rate</div></div>
   </div>
 
-  <div class="atk-body">
-    <div class="gcol">
-      <div class="gcol-hdr">
-        Money flow map
-        <span style="margin-left:auto;font-weight:400;color:var(--text3);font-size:10px;" id="ginfo"></span>
+  <div class="bh" id="bh-bar">
+    <strong id="bh-n">0</strong> extra rules from Battle Mode training
+    <span class="bh-pills" id="bh-pills"></span>
+  </div>
+
+  <div class="a-body">
+
+    <div class="g-wrap" style="border-right:1px solid var(--border);">
+      <div class="g-bar">
+        <div class="g-bar-l">Money Flow Map</div>
+        <div class="g-bar-r" id="ginfo"></div>
       </div>
       <svg id="gsvg-attack" class="gsvg"></svg>
-      <div class="gleg">
-        <div class="li"><div class="ld" style="background:#00e080"></div>Normal account</div>
-        <div class="li"><div class="ld" style="background:#ff3355"></div>Fraud ring</div>
-        <div class="li"><div class="ld" style="background:#a278ff"></div>Money mule</div>
-        <div class="li"><div class="ld" style="background:#ff7a45"></div>Fraud source</div>
-        <div class="li"><div class="ld" style="background:#ffb800"></div>Suspicious</div>
+      <div class="g-legend">
+        <div class="leg-i"><div class="leg-d" style="background:#00d474"></div>Normal</div>
+        <div class="leg-i"><div class="leg-d" style="background:#ff2d55"></div>Fraud ring</div>
+        <div class="leg-i"><div class="leg-d" style="background:#a78bfa"></div>Mule</div>
+        <div class="leg-i"><div class="leg-d" style="background:#ff7a45"></div>Source</div>
+        <div class="leg-i"><div class="leg-d" style="background:#f5a623"></div>Suspicious</div>
       </div>
     </div>
 
-    <div class="scol">
-      <div class="bhardened" id="bhardened">
-        <div>
-          <div class="bhardened-text"><strong id="bh-count">0</strong> extra rules active from Battle Mode training</div>
-          <div class="bhardened-pills" id="bh-pills"></div>
-        </div>
-      </div>
-
-      <!-- Outcome -->
-      <div class="oc" id="oc" style="flex-direction:column;">
+    <div class="a-right">
+      <div class="oc" id="oc">
         <div class="oc-row">
-          <div class="oc-main">
+          <div>
             <div class="oc-title" id="oc-title"></div>
             <div class="oc-sub"   id="oc-sub"></div>
           </div>
-          <div class="oc-score-wrap">
-            <div class="oc-score"   id="oc-score"></div>
+          <div class="oc-score">
+            <div class="oc-score-n" id="oc-score"></div>
             <div class="oc-score-l" id="oc-score-l"></div>
           </div>
         </div>
       </div>
-
-      <!-- Why suspicious -->
-      <div class="wh" id="wh">
-        <div class="wh-lbl">Why it looked suspicious</div>
-        <div class="wh-chips" id="wh-chips"></div>
+      <div class="pat-wrap" id="chips-wrap">
+        <div class="pat-lbl">Why it was flagged</div>
+        <div class="pat-chips" id="wh-chips"></div>
       </div>
-
-      <!-- Report popup button -->
-      <button class="rep-btn" id="rep-btn" onclick="openReport()">
-        Read the AI investigator's full report →
-      </button>
-
-      <!-- Placeholder when no report yet -->
-      <div class="rep-wrap" id="rep-placeholder" style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);text-align:center;padding:20px;">
-          <div style="font-size:13px;color:var(--text2);font-weight:500;">Launch an attack to generate a report</div>
-          <div style="font-size:11px;">The AI will explain what it found in plain English</div>
-        </div>
+      <button class="rep-btn" id="rep-btn" onclick="openReport()">Read the AI investigator's full report</button>
+      <div class="a-ph" id="a-placeholder">
+        <div class="a-ph-t">Launch an attack to see results</div>
+        <div class="a-ph-s">The AI will explain what it found in plain English</div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════
-     REPORT MODAL
-═══════════════════════════════════ -->
-<div class="modal-overlay" id="modal-overlay" onclick="closeReportIfOutside(event)">
-  <div class="modal" id="modal">
-    <div class="modal-hdr">
-      <div class="modal-title">AI Investigator's Report</div>
-      <button class="modal-close" onclick="closeReport()">✕</button>
-    </div>
-    <div class="modal-meta" id="modal-meta"></div>
-    <div class="modal-body" id="modal-body">Loading…</div>
-    <div class="modal-streaming" id="modal-streaming" style="display:none;">
-      <div class="pulse-dot"></div>
-      AI is writing the report…
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════
-     TAB 2: WATCH THE AIs FIGHT
-═══════════════════════════════════ -->
-<div id="pane-battle" class="pane on">
-
-  <div class="btop">
-    <button class="bbtn go" id="bbtn" onclick="toggleBattle()">Start the Battle</button>
-    <div class="btop-desc">Two AIs fight — a fraudster AI keeps trying new tricks, a defender AI learns and adapts in real time</div>
-
-    <div class="sboard">
-      <div class="sb r">
-        <div class="sb-lbl">Fraudster AI</div>
-        <div class="sb-n" id="b-eva">0</div>
-        <div class="sb-sub">times it got through</div>
-      </div>
-      <div class="sb b">
-        <div class="sb-lbl">Defender AI</div>
-        <div class="sb-n" id="b-det">0</div>
-        <div class="sb-sub">times it caught the fraud</div>
-      </div>
-    </div>
-
-    <div class="bstats">
-      <div class="bst"><div class="bst-l">Attacks</div><div class="bst-n" id="b-atk" style="color:var(--text)">0</div></div>
-      <div class="bst"><div class="bst-l">New rules</div><div class="bst-n" id="b-rules" style="color:var(--cyan)">0</div></div>
-    </div>
-  </div>
-
-  <div class="bbody">
-
-    <!-- Red agent -->
-    <div class="ap red">
-      <div class="ap-hdr">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div class="ap-name">FraudGPT</div>
-          <button class="ap-detail-btn" onclick="openAgentModal('fraud')" title="View full strategy details">Details</button>
-        </div>
-        <div class="ap-role">The fraudster AI — tries to move dirty money without being caught.</div>
-      </div>
-      <div class="think" id="fg-think">
-        <div class="think-l">Current status</div>
-        <div class="think-t">Waiting to start…</div>
-      </div>
-      <div class="mem">
-        <div class="mem-lbl">Got caught using these</div>
-        <div class="mem-list" id="fg-fails"><div class="mr empty">None yet</div></div>
-      </div>
-      <div class="mem">
-        <div class="mem-lbl">These worked — building on them</div>
-        <div class="mem-list" id="fg-wins"><div class="mr empty">None yet</div></div>
-      </div>
-      <div class="fdiv"></div>
-      <div class="flbl">Activity</div>
-      <div class="feed" id="feed-r"></div>
-    </div>
-
-    <!-- Center -->
-    <div class="cc">
-      <div class="cc-hdr">
-        Live money flow map
-        <span style="margin-left:auto;font-weight:400;color:var(--text3);font-size:10px;" id="b-ginfo"></span>
-      </div>
-      <svg id="gsvg-battle" class="gsvg" style="flex:1;min-height:0;"></svg>
-      <div class="bleg">
-        <div class="li"><div class="ld" style="background:#00e080"></div>Normal</div>
-        <div class="li"><div class="ld" style="background:#ff3355"></div>Fraud</div>
-        <div class="li"><div class="ld" style="background:#a278ff"></div>Mule</div>
-        <div class="li"><div class="ld" style="background:#ff7a45"></div>Source</div>
-      </div>
-      <div class="rules-strip">
-        <div class="rs-hdr">
-          Detection rules
-          <span id="b-rcnt" style="color:var(--text2);font-weight:400;"></span>
-          <span class="rs-new" id="rs-new">+ NEW</span>
-        </div>
-        <div class="rs-list" id="b-rlist"></div>
-      </div>
-    </div>
-
-    <!-- Blue agent -->
-    <div class="ap blue">
-      <div class="ap-hdr">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div class="ap-name">DefenseAI</div>
-          <button class="ap-detail-btn ap-detail-btn-blue" onclick="openAgentModal('defense')" title="View full defense details">Details</button>
-        </div>
-        <div class="ap-role">The defender AI — detects fraud and writes new rules whenever tricked.</div>
-      </div>
-      <div class="think" id="da-think">
-        <div class="think-l">Current status</div>
-        <div class="think-t">Waiting to start…</div>
-      </div>
-      <div class="mem">
-        <div class="mem-lbl">New rules created this battle</div>
-        <div class="mem-list" id="da-rules"><div class="mr empty">No evasions yet</div></div>
-      </div>
-      <div class="fdiv"></div>
-      <div class="flbl">Activity</div>
-      <div class="feed" id="feed-b"></div>
     </div>
 
   </div>
 </div>
 
-<!-- Agent detail modals -->
-<div class="modal-overlay" id="agent-modal-overlay" onclick="closeAgentIfOutside(event)">
-  <div class="modal" id="agent-modal">
-    <div class="modal-hdr">
-      <div class="modal-title" id="agent-modal-title">Agent Details</div>
-      <button class="modal-close" onclick="closeAgentModal()">✕</button>
+<!-- Report modal -->
+<div class="overlay" id="rep-overlay" onclick="closeRepIfOutside(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-ttl">AI Investigator's Report</div>
+      <button class="modal-x" onclick="closeReport()">✕</button>
     </div>
-    <div class="modal-body" id="agent-modal-body" style="white-space:normal;line-height:1.7;"></div>
+    <div class="modal-tags" id="rep-tags"></div>
+    <div class="modal-body" id="rep-body">Loading…</div>
+    <div class="modal-foot" id="rep-foot" style="display:none;"><div class="pulse"></div>Writing report…</div>
+  </div>
+</div>
+
+<!-- Agent modal -->
+<div class="overlay" id="agent-overlay" onclick="closeAgentIfOutside(event)">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-ttl" id="agent-ttl">Agent Details</div>
+      <button class="modal-x" onclick="closeAgent()">✕</button>
+    </div>
+    <div class="modal-body" id="agent-body" style="white-space:normal;line-height:1.7;"></div>
   </div>
 </div>
 
 <div id="tip"><div id="tip-n"></div><div id="tip-b"></div></div>
 
 <script>
-const API = 'http://localhost:8000';
-let diff=1, battleOn=false, pollT=null, logES=null;
-let prevDet=0, prevEva=0, prevAdapts=0;
-let currentReport='', currentRingMeta=null;
+const API='http://localhost:8000';
+let diff=1,battleOn=false,pollT=null,logES=null;
+let prevDet=0,prevEva=0,prevAdapts=0;
+let currentReport='',currentRingMeta=null;
+let agentData={fraud:{fails:[],wins:[]},defense:{adaptations:[],rules:[]}};
 
-const LEVEL_DESC = {
+const LEVEL_DESC={
   1:'One account splits money to 5 others at once — the simplest trick in the book',
   2:'Keeps each transfer just under $500 so it avoids automatic reporting flags',
   3:'Money travels in a circle (A → B → C → back to A) to hide where it came from',
   4:'Money hops through 4+ middlemen to make it nearly impossible to trace',
   5:'Small amounts, trustworthy-looking devices — designed to look completely normal'
 };
-
-const PATTERNS = {
-  fan_out:         {label:'Money split many ways',         desc:'One account sent money to many accounts simultaneously'},
-  structuring:     {label:'Amounts kept just under the limit', desc:'Transfers deliberately kept below reporting thresholds'},
-  circular:        {label:'Money went in a circle',        desc:'A→B→C→back to A — classic laundering loop'},
-  layering:        {label:'Too many middlemen',            desc:'Money passed through 3+ accounts before its destination'},
-  velocity:        {label:'Too many transfers too fast',   desc:'Abnormally high transaction count in a short window'},
-  shared_metadata: {label:'Same device, different accounts', desc:'Multiple accounts operating from one device or IP'},
-  pagerank_anomaly:{label:'One account collecting from many', desc:'A single account received money from many sources — a hub'},
-  ml_consensus:    {label:'AI model flagged it',           desc:'The machine learning model independently identified these as high-risk'},
-  device_anomaly:  {label:'Bot-like behaviour',            desc:'Device scores suggest automated tools, not real people'},
-  location_cluster:{label:'Unusual location patterns',     desc:'Multiple accounts showing foreign or mismatched locations'},
+const PATTERNS={
+  fan_out:{label:'Money split many ways',desc:'One account sent money to many accounts simultaneously'},
+  structuring:{label:'Amounts just under the limit',desc:'Transfers deliberately kept below reporting thresholds'},
+  circular:{label:'Money went in a circle',desc:'A→B→C→back to A — classic laundering loop'},
+  layering:{label:'Too many middlemen',desc:'Money passed through 3+ accounts before its destination'},
+  velocity:{label:'Too many transfers too fast',desc:'Abnormally high transaction count in a short window'},
+  shared_metadata:{label:'Same device, different accounts',desc:'Multiple accounts operating from one device or IP'},
+  pagerank_anomaly:{label:'One account collecting from many',desc:'A single account received money from many sources'},
+  ml_consensus:{label:'AI model flagged it',desc:'Machine learning independently identified these as high-risk'},
+  device_anomaly:{label:'Bot-like behaviour',desc:'Device scores suggest automated tools, not real people'},
+  location_cluster:{label:'Unusual location patterns',desc:'Multiple accounts showing foreign or mismatched locations'},
 };
-
-const RULE_FRIENDLY = {
-  fan_out:'Money splitting', circular:'Circular flows', layering:'Layered hops',
-  structuring:'Under-limit amounts', velocity:'High speed', shared_metadata:'Shared device',
-  pagerank_anomaly:'Collection hub', ml_consensus:'AI consensus',
-  device_anomaly:'Bot device', location_cluster:'Location mismatch',
-};
+const RULE_FRIENDLY={fan_out:'Money splitting',circular:'Circular flows',layering:'Layered hops',structuring:'Under-limit amounts',velocity:'High speed',shared_metadata:'Shared device',pagerank_anomaly:'Collection hub',ml_consensus:'AI consensus',device_anomaly:'Bot device',location_cluster:'Location mismatch'};
 
 function goTab(id,btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.ntab').forEach(b=>b.classList.remove('on'));
   document.getElementById('pane-'+id).classList.add('on'); btn.classList.add('on');
 }
-
 function setDiff(d){
   diff=d;
   document.querySelectorAll('#lvlbtns .lvl').forEach(b=>b.classList.toggle('on',+b.dataset.d===d));
-  set('lvldesc', LEVEL_DESC[d]);
+  set('lvldesc',LEVEL_DESC[d]);
 }
+function set(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 async function checkApi(){
   try{
     const r=await fetch(`${API}/stats`,{signal:AbortSignal.timeout(2500)});
     if(!r.ok)throw 0;
     const d=await r.json();
-    document.getElementById('sdot').className='sdot on';
+    document.getElementById('sdot').className='cdot on';
     set('stxt','Connected');
     applyStats(d);
-    if(d.ml_model_trained&&d.model_metrics){
-      // removed
-      // removed
-    }
   }catch{
-    document.getElementById('sdot').className='sdot off';
-    set('stxt','Backend offline — run: python main.py');
+    document.getElementById('sdot').className='cdot off';
+    set('stxt','Offline');
   }
 }
 
 function applyStats(d){
-  // Attack Mode (Tab 1) — reads from d.attack
-  const a = d.attack || {};
-  set('a-tot',  a.attacks_launched||0);
-  set('a-det',  a.detections||0);
-  set('a-eva',  a.evasions||0);
-  const atk = a.attacks_launched||0, det = a.detections||0;
-  set('a-rate', atk>0 ? Math.round(det/atk*100)+'%' : '—');
-  set('a-mode', d.real_data_mode ? 'Kaggle (real data)' : 'Synthetic');
-
-  // Battle Mode (Tab 2) — reads from d.battle
-  const b = d.battle || {};
-  set('b-atk',  b.attacks_launched||0);
-  set('b-det',  b.detections||0);
-  set('b-eva',  b.evasions||0);
-  set('b-rules',(d.battle_rule_names||[]).length + (d.adaptations||[]).length);
-
-  // Battle-hardened indicator in Attack Mode
-  updateBattleHardened(d.battle_rule_names||[], d.active_rules||[]);
+  const a=d.attack||{};
+  set('a-tot',a.attacks_launched||0);
+  set('a-det',a.detections||0);
+  set('a-eva',a.evasions||0);
+  const atk=a.attacks_launched||0,det=a.detections||0;
+  set('a-rate',atk>0?Math.round(det/atk*100)+'%':'—');
+  const b=d.battle||{};
+  set('b-atk',b.attacks_launched||0);
+  set('b-det',b.detections||0);
+  set('b-eva',b.evasions||0);
+  set('b-rules',(d.battle_rule_names||[]).length+(d.adaptations||[]).length);
+  updateBH(d.battle_rule_names||[],d.active_rules||[]);
 }
 
-function updateBattleHardened(battleRuleNames, allRules){
-  const bar = document.getElementById('bhardened');
-  const battleRules = battleRuleNames.filter(r => allRules.includes(r));
-  if(battleRules.length > 0){
-    bar.style.display='flex';
-    set('bh-count', battleRules.length);
-    const pills = document.getElementById('bh-pills');
-    pills.innerHTML = battleRules.map(r=>
-      `<span class="bhardened-pill">${RULE_FRIENDLY[r]||r}</span>`
-    ).join('');
-  } else {
-    bar.style.display='none';
-  }
-}
-
-// ── Report modal ───────────────────────────────────────────────────────
-function openReport(){
-  if(!currentReport && !currentRingMeta) return;
-  const overlay=document.getElementById('modal-overlay');
-  overlay.classList.add('on');
-  const body=document.getElementById('modal-body');
-  body.className='modal-body live';
-  body.textContent=currentReport||'Report is being generated…';
-  body.scrollTop=0;
-  // Meta tags
-  if(currentRingMeta){
-    const meta=document.getElementById('modal-meta');
-    const score=currentRingMeta.score||0;
-    const pats=(currentRingMeta.patterns||[]).slice(0,4);
-    meta.innerHTML=
-      `<span class="modal-tag caught">Fraud Detected</span>`+
-      `<span class="modal-tag score">Score: ${score}/100</span>`+
-      pats.map(p=>{
-        const k=p.split(':')[0], info=PATTERNS[k];
-        return `<span class="modal-tag pattern">${info?info.label:p}</span>`;
-      }).join('');
-  }
-}
-
-function closeReport(){
-  document.getElementById('modal-overlay').classList.remove('on');
-}
-
-function closeReportIfOutside(ev){
-  if(ev.target===document.getElementById('modal-overlay')) closeReport();
-}
-
-document.addEventListener('keydown', ev=>{ if(ev.key==='Escape') closeReport(); });
-
-function streamReportIntoModal(ringId, ringMeta){
-  currentRingMeta = ringMeta;
-  currentReport = '';
-
-  // Show streaming indicator
-  document.getElementById('modal-streaming').style.display='flex';
-  const body=document.getElementById('modal-body');
-  body.className='modal-body live';
-  body.textContent='';
-
-  const es=new EventSource(`${API}/stream/report/${ringId}`);
-  es.onmessage=ev=>{
-    try{
-      const d=JSON.parse(ev.data);
-      if(d.done){
-        es.close();
-        document.getElementById('modal-streaming').style.display='none';
-        return;
-      }
-      if(d.chunk){
-        currentReport+=d.chunk;
-        // Update modal if open
-        if(document.getElementById('modal-overlay').classList.contains('on')){
-          body.textContent=currentReport;
-          body.scrollTop=body.scrollHeight;
-        }
-      }
-    }catch{}
-  };
-  es.onerror=()=>{es.close();document.getElementById('modal-streaming').style.display='none';};
+function updateBH(bnames,all){
+  const bar=document.getElementById('bh-bar');
+  const valid=bnames.filter(r=>all.includes(r));
+  if(valid.length){
+    bar.style.display='block';
+    set('bh-n',valid.length);
+    document.getElementById('bh-pills').innerHTML=valid.map(r=>`<span class="bh-pill">${RULE_FRIENDLY[r]||r}</span>`).join('');
+  }else bar.style.display='none';
 }
 
 async function doAttack(){
   const btn=document.getElementById('gobtn');
-  btn.disabled=true; btn.textContent='⏳ Analysing…';
-  hide('oc'); hide('wh');
-  // Hide old report button, clear state
-  document.getElementById('rep-btn').classList.remove('ready');
-  document.getElementById('rep-placeholder').style.display='flex';
+  btn.disabled=true; btn.textContent='Analysing…';
+  document.getElementById('oc').style.display='none';
+  document.getElementById('chips-wrap').style.display='none';
+  document.getElementById('rep-btn').classList.remove('on');
+  document.getElementById('a-placeholder').style.display='flex';
   currentReport=''; currentRingMeta=null;
-
   try{
     const res=await fetch(`${API}/round`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({difficulty:diff})});
     const data=await res.json();
     if(data.graph){
       renderGraph('attack',data.graph,data.ring?.accounts??[]);
-      const n=(data.graph.nodes||[]).length, e=(data.graph.edges||[]).length;
-      set('ginfo',`${n} accounts · ${e} transfers`);
+      const n=(data.graph.nodes||[]).length,e=(data.graph.edges||[]).length;
+      set('ginfo',`${n} nodes · ${e} edges`);
     }
     if(data.outcome==='detected'&&data.ring){
       showCaught(data.ring);
-      // Show report button immediately, stream in background
-      document.getElementById('rep-placeholder').style.display='none';
-      const rb=document.getElementById('rep-btn');
-      rb.classList.add('ready');
-      rb.textContent=''; // reset
-      rb.innerHTML='Read the AI investigator\'s full report →';
-      streamReportIntoModal(data.ring.ring_id, {
-        score: data.ring.suspicion_score,
-        patterns: data.ring.patterns||[]
-      });
+      document.getElementById('a-placeholder').style.display='none';
+      document.getElementById('rep-btn').classList.add('on');
+      streamRepIntoModal(data.ring.ring_id,{score:data.ring.suspicion_score,patterns:data.ring.patterns||[]});
     }else if(data.outcome==='evaded'){
       showEvaded(data.adaptation);
-    }else if(data.error){
-      document.getElementById('rep-placeholder').innerHTML=`<div style="padding:20px;color:var(--red);text-align:center;">${esc(data.error)}</div>`;
     }
     await refreshStats();
   }catch(e){
-    document.getElementById('rep-placeholder').innerHTML=`<div style="padding:20px;color:var(--text2);text-align:center;">🔌 Can't reach backend. Make sure main.py is running.</div>`;
+    document.getElementById('a-placeholder').innerHTML='<div class="a-ph-t" style="color:var(--red)">Can\'t reach backend</div><div class="a-ph-s">Make sure main.py is running</div>';
   }
-  btn.disabled=false; btn.textContent='Launch Attack →';
+  btn.disabled=false; btn.textContent='Launch Attack';
 }
 
 function showCaught(ring){
-  const score=ring.suspicion_score||0, amt=ring.total_amount||0;
+  const score=ring.suspicion_score||0,amt=ring.total_amount||0;
   const el=document.getElementById('oc');
-  el.className='oc caught'; el.style.display='flex';
-  set('oc-title','Fraud ring caught!');
+  el.className='oc caught'; el.style.display='block';
+  set('oc-title','Fraud ring caught.');
   set('oc-sub',`${ring.accounts?.length||0} accounts · $${Math.round(amt).toLocaleString()} moved · ${ring.ring_id}`);
   set('oc-score',score+'/100'); set('oc-score-l','Suspicion score');
   const pats=ring.patterns||[];
   if(pats.length){
-    document.getElementById('wh').style.display='block';
+    document.getElementById('chips-wrap').style.display='block';
     document.getElementById('wh-chips').innerHTML=pats.map(p=>{
-      const k=p.split(':')[0], info=PATTERNS[k];
-      return info ? `<div class="chip" title="${esc(info.desc)}">${info.label}</div>` : `<div class="chip">${esc(p)}</div>`;
+      const k=p.split(':')[0],info=PATTERNS[k];
+      return `<div class="pchip" title="${esc(info?.desc||p)}">${info?.label||p}</div>`;
     }).join('');
   }
 }
 
 function showEvaded(adaptation){
   const el=document.getElementById('oc');
-  el.className='oc evaded'; el.style.display='flex';
-  set('oc-title','Attack slipped through');
-  set('oc-sub','The fraud was not detected this time. The defender AI is learning from this.');
+  el.className='oc evaded'; el.style.display='block';
+  set('oc-title','Attack slipped through.');
+  set('oc-sub','Not detected this round.'+(adaptation?` New rule created: ${adaptation.rule_name||''}`:' Defender is learning.'));
   set('oc-score',''); set('oc-score-l','');
-  const rep=document.getElementById('a-rep');
-  rep.className='rep-body live';
-  rep.innerHTML=`<p style="color:var(--amber);font-weight:600;margin-bottom:10px;">This attack wasn't detected</p>`+
-    `<p>The fraudulent transactions blended in with legitimate ones. The current rules weren't enough to catch this type.</p>`+
-    (adaptation?`<p style="margin-top:12px;">However, <strong>DefenseAI just created a new rule</strong> called <span style="color:var(--cyan)">"${esc(adaptation.rule_name||'')}"</span> to catch this pattern in future: <em>${esc(adaptation.description||'')}</em></p>`:'');
+  document.getElementById('chips-wrap').style.display='none';
+  document.getElementById('a-placeholder').style.display='none';
 }
 
-function streamReport(ringId){
-  const el=document.getElementById('a-rep');
-  el.className='rep-body live'; el.innerHTML=''; let text='';
-  const es=new EventSource(`${API}/stream/report/${ringId}`);
-  es.onmessage=ev=>{try{const d=JSON.parse(ev.data);if(d.done){es.close();return;}if(d.chunk){text+=d.chunk;el.textContent=text;el.scrollTop=el.scrollHeight;}}catch{}};
-  es.onerror=()=>es.close();
-}
-
-async function toggleBattle(){
-  const btn=document.getElementById('bbtn');
-}
-// ── Agent detail modals ───────────────────────────────────────────────
-let agentModalData = {fraud:{fails:[],wins:[]}, defense:{adaptations:[],rules:[]}};
-
-function openAgentModal(who){
-  document.getElementById('agent-modal-overlay').classList.add('on');
-  const title=document.getElementById('agent-modal-title');
-  const body=document.getElementById('agent-modal-body');
-  const RULE_FRIENDLY={fan_out:'Money splitting',circular:'Circular flows',layering:'Layered hops',structuring:'Under-limit amounts',velocity:'High speed',shared_metadata:'Shared device',pagerank_anomaly:'Collection hub',ml_consensus:'AI consensus',device_anomaly:'Bot device',location_cluster:'Location mismatch'};
-  function countItems(arr){const c={};arr.forEach(s=>{c[s]=(c[s]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);}
-  if(who==='fraud'){
-    title.textContent='FraudGPT — Strategy Details';
-    const fc=countItems(agentModalData.fraud.fails), wc=countItems(agentModalData.fraud.wins);
-    body.innerHTML=
-      `<p style="color:var(--text2);margin-bottom:16px;">FraudGPT adapts each round — it avoids what got caught and doubles down on what worked.</p>`+
-      `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--red);margin-bottom:8px;">Got caught using these</div>`+
-      (fc.length?fc.map(([s,n])=>`<div style="padding:5px 10px;border-radius:4px;margin-bottom:4px;background:rgba(255,51,85,.05);font-size:12px;color:var(--text2);">${esc(s)}${n>1?` <span style="color:var(--red);font-size:10px;">×${n}</span>`:''}</div>`).join(''):`<div style="font-size:12px;color:var(--text3);font-style:italic;padding:6px 0;">None yet</div>`)+'</div>'+
-      `<div><div style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--green);margin-bottom:8px;">These worked — building on them</div>`+
-      (wc.length?wc.map(([s,n])=>`<div style="padding:5px 10px;border-radius:4px;margin-bottom:4px;background:rgba(0,224,128,.05);font-size:12px;color:var(--text2);">${esc(s)}${n>1?` <span style="color:var(--green);font-size:10px;">×${n}</span>`:''}</div>`).join(''):`<div style="font-size:12px;color:var(--text3);font-style:italic;padding:6px 0;">None yet</div>`)+'</div>';
-  } else {
-    title.textContent='DefenseAI — Detection Details';
-    const {adaptations,rules}=agentModalData.defense;
-    body.innerHTML=
-      `<p style="color:var(--text2);margin-bottom:16px;">DefenseAI writes new detection rules whenever FraudGPT slips through. These rules stay active for the rest of the battle.</p>`+
-      `<div style="margin-bottom:16px;"><div style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--cyan);margin-bottom:8px;">New rules created this battle</div>`+
-      (adaptations.length?adaptations.map(a=>`<div style="padding:8px 10px;border-radius:4px;margin-bottom:5px;background:rgba(0,200,240,.05);"><div style="color:var(--cyan);font-weight:600;font-size:12px;margin-bottom:2px;">${esc(a.rule_name||'')}</div><div style="color:var(--text2);font-size:11px;">${esc(a.description||'')}</div></div>`).join(''):`<div style="font-size:12px;color:var(--text3);font-style:italic;padding:6px 0;">No evasions yet</div>`)+'</div>'+
-      `<div><div style="font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px;">All active rules (${rules.length})</div>`+
-      rules.map(r=>`<div style="padding:4px 10px;border-radius:4px;margin-bottom:3px;background:var(--bg3);font-size:11px;color:var(--text2);">${RULE_FRIENDLY[r]||r}</div>`).join('')+'</div>';
+function openReport(){
+  document.getElementById('rep-overlay').classList.add('on');
+  const body=document.getElementById('rep-body');
+  body.className='modal-body live';
+  body.textContent=currentReport||'Report is being generated…';
+  body.scrollTop=0;
+  if(currentRingMeta){
+    const score=currentRingMeta.score||0;
+    const pats=(currentRingMeta.patterns||[]).slice(0,4);
+    document.getElementById('rep-tags').innerHTML=
+      `<span class="mtag g">Fraud Detected</span>`+
+      `<span class="mtag gray">Score: ${score}/100</span>`+
+      pats.map(p=>{const k=p.split(':')[0],info=PATTERNS[k];return `<span class="mtag dim">${info?.label||p}</span>`;}).join('');
   }
 }
+function closeReport(){document.getElementById('rep-overlay').classList.remove('on');}
+function closeRepIfOutside(ev){if(ev.target===document.getElementById('rep-overlay'))closeReport();}
 
-function closeAgentModal(){document.getElementById('agent-modal-overlay').classList.remove('on');}
-function closeAgentIfOutside(ev){if(ev.target===document.getElementById('agent-modal-overlay'))closeAgentModal();}
-document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){closeReport();closeAgentModal();}});
+function streamRepIntoModal(ringId,meta){
+  currentRingMeta=meta; currentReport='';
+  document.getElementById('rep-foot').style.display='flex';
+  const body=document.getElementById('rep-body');
+  body.className='modal-body live'; body.textContent='';
+  const es=new EventSource(`${API}/stream/report/${ringId}`);
+  es.onmessage=ev=>{
+    try{
+      const d=JSON.parse(ev.data);
+      if(d.done){es.close();document.getElementById('rep-foot').style.display='none';return;}
+      if(d.chunk){
+        currentReport+=d.chunk;
+        if(document.getElementById('rep-overlay').classList.contains('on')){body.textContent=currentReport;body.scrollTop=body.scrollHeight;}
+      }
+    }catch{}
+  };
+  es.onerror=()=>{es.close();document.getElementById('rep-foot').style.display='none';};
+}
 
-// ── Battle toggle ─────────────────────────────────────────────────────
+function openAgentModal(who){
+  document.getElementById('agent-overlay').classList.add('on');
+  const ttl=document.getElementById('agent-ttl');
+  const body=document.getElementById('agent-body');
+  function countItems(arr){const c={};arr.forEach(s=>{c[s]=(c[s]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);}
+  const rowR=(s,n)=>`<div style="padding:6px 10px;border-radius:8px;margin-bottom:4px;background:rgba(255,45,85,.04);border:1px solid rgba(255,45,85,.08);font-size:12px;color:var(--text2);">${esc(s)}${n>1?` <span style="color:var(--red);font-size:10px;font-family:'JetBrains Mono',monospace;">×${n}</span>`:''}</div>`;
+  const rowG=(s,n)=>`<div style="padding:6px 10px;border-radius:8px;margin-bottom:4px;background:rgba(0,212,116,.04);border:1px solid rgba(0,212,116,.08);font-size:12px;color:var(--text2);">${esc(s)}${n>1?` <span style="color:var(--green);font-size:10px;font-family:'JetBrains Mono',monospace;">×${n}</span>`:''}</div>`;
+  const sectionHdr=(txt,col)=>`<div style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:${col};margin:0 0 8px;font-family:'JetBrains Mono',monospace;">${txt}</div>`;
+  if(who==='fraud'){
+    ttl.textContent='FraudGPT — Strategy Memory';
+    const fc=countItems(agentData.fraud.fails),wc=countItems(agentData.fraud.wins);
+    body.innerHTML=
+      `<p style="color:var(--text2);margin-bottom:18px;font-size:12px;line-height:1.6;">FraudGPT adapts each round — avoiding what got caught and doubling down on what worked.</p>`+
+      `<div style="margin-bottom:18px;">`+sectionHdr('Got caught using these','rgba(255,45,85,.6)')+
+      (fc.length?fc.map(([s,n])=>rowR(s,n)).join(''):`<div style="font-size:12px;color:var(--text3);font-style:italic;">None yet</div>`)+`</div>`+
+      `<div>`+sectionHdr('These worked — building on them','rgba(0,212,116,.6)')+
+      (wc.length?wc.map(([s,n])=>rowG(s,n)).join(''):`<div style="font-size:12px;color:var(--text3);font-style:italic;">None yet</div>`)+`</div>`;
+  }else{
+    ttl.textContent='DefenseAI — Detection Details';
+    const{adaptations,rules}=agentData.defense;
+    body.innerHTML=
+      `<p style="color:var(--text2);margin-bottom:18px;font-size:12px;line-height:1.6;">DefenseAI writes a new detection rule every time FraudGPT slips through. These rules stay active for the rest of the battle.</p>`+
+      `<div style="margin-bottom:18px;">`+sectionHdr(`Rules created this battle (${adaptations.length})`,'rgba(139,92,246,.6)')+
+      (adaptations.length?adaptations.map(a=>`<div style="padding:10px 12px;border-radius:8px;margin-bottom:6px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.1);"><div style="color:var(--purple);font-weight:600;font-size:12px;font-family:'JetBrains Mono',monospace;margin-bottom:3px;">${esc(a.rule_name||'')}</div><div style="color:var(--text2);font-size:11px;">${esc(a.description||'')}</div></div>`).join(''):`<div style="font-size:12px;color:var(--text3);font-style:italic;">No evasions yet</div>`)+`</div>`+
+      `<div>`+sectionHdr(`All active rules (${rules.length})`,'var(--text3)')+
+      rules.map(r=>`<div style="padding:4px 10px;border-radius:6px;margin-bottom:3px;background:var(--card2);border:1px solid var(--border);font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;">${RULE_FRIENDLY[r]||r}</div>`).join('')+`</div>`;
+  }
+}
+function closeAgent(){document.getElementById('agent-overlay').classList.remove('on');}
+function closeAgentIfOutside(ev){if(ev.target===document.getElementById('agent-overlay'))closeAgent();}
+document.addEventListener('keydown',ev=>{if(ev.key==='Escape'){closeReport();closeAgent();}});
+
 async function toggleBattle(){
   const btn=document.getElementById('bbtn');
   if(!battleOn){
     try{
       await fetch(`${API}/battle/start`,{method:'POST'});
-      battleOn=true; btn.textContent='Stop Battle'; btn.className='bbtn stop';
-      setThink('fg','Starting up — generating first attack.');
-      setThink('da','Monitoring with 10 base detection rules. Ready to add new ones if anything slips through.');
-      fpost('R','Starting up','Going to try a basic money-split first. Will adapt if caught.');
-      fpost('B','Standing by','10 detection rules loaded. Will add new ones the moment anything slips through.');
+      battleOn=true; btn.textContent='Stop Battle'; btn.className='battle-btn stop';
+      setStatus('fg','Starting — generating first attack.');
+      setStatus('da','Monitoring with 10 detection rules.');
+      fpost('R','Starting','Trying a basic money-split first.');
+      fpost('B','Standing by','10 rules loaded. Adding new ones if anything gets through.');
       startPoll(); startStream();
-    }catch(e){fpost('R','Error','Could not reach backend: '+e.message);}
+    }catch(e){fpost('R','Error','Could not reach backend.');}
   }else{
     await fetch(`${API}/battle/stop`,{method:'POST'}).catch(()=>{});
-    battleOn=false; btn.textContent='Start the Battle'; btn.className='bbtn go';
+    battleOn=false; btn.textContent='Start Battle'; btn.className='battle-btn go';
     stopPoll(); stopStream();
-    fpost('B','Battle paused','Both AIs keep their memory. Press Start to continue.');
+    fpost('B','Paused','Both AIs retain their memory.');
   }
 }
 
-function setThink(who,html){
-  const id=who==='fg'?'fg-think':'da-think';
-  const el=document.getElementById(id);
-  if(el) el.querySelector('.think-t').innerHTML=html;
+function setStatus(who,html){
+  const el=document.getElementById(who==='fg'?'fg-status':'da-status');
+  if(el)el.innerHTML=html;
 }
 
 function fpost(team,type,body){
-  const id=team==='R'?'feed-r':'feed-b';
-  const el=document.getElementById(id); if(!el)return;
+  const feed=document.getElementById('b-feed');if(!feed)return;
   const d=document.createElement('div');
   d.className=`fi ${team}`;
   d.innerHTML=`<div class="fi-t">${esc(type)}</div><div class="fi-b">${esc(body)}</div>`;
-  el.appendChild(d); el.scrollTop=el.scrollHeight;
+  feed.appendChild(d); feed.scrollTop=feed.scrollHeight;
 }
 
 function startPoll(){
   pollT=setInterval(async()=>{
     try{
-      const [sR,bR,gR]=await Promise.all([
-        fetch(`${API}/stats`),
-        fetch(`${API}/battle/state`).catch(()=>null),
-        fetch(`${API}/graph`).catch(()=>null),
-      ]);
-      const stats=await sR.json();
-      applyStats(stats);
-      if(bR&&bR.ok){const bs=await bR.json(); updateBrains(bs, stats);}
-      if(gR&&gR.ok){
-        const g=await gR.json();
-        const n=(g.nodes||[]).length,e=(g.edges||[]).length;
-        if(n){set('b-ginfo',`${n} accounts · ${e} transfers`);renderGraph('battle',g,[]);}
-      }
+      const[sR,bR,gR]=await Promise.all([fetch(`${API}/stats`),fetch(`${API}/battle/state`).catch(()=>null),fetch(`${API}/graph`).catch(()=>null)]);
+      const stats=await sR.json(); applyStats(stats);
+      if(bR&&bR.ok){const bs=await bR.json();updateBrains(bs,stats);}
+      if(gR&&gR.ok){const g=await gR.json();const n=(g.nodes||[]).length,e=(g.edges||[]).length;if(n){set('b-ginfo',`${n} nodes · ${e} edges`);renderGraph('battle',g,[]);}}
     }catch{}
   },4000);
 }
 function stopPoll(){if(pollT){clearInterval(pollT);pollT=null;}}
 
 function updateBrains(bs,stats){
-  const fg=bs.fraudgpt||{}, da=bs.defenseai||{};
-  const fails=fg.failed_attacks||[], wins=fg.successful_evasions||[];
+  const fg=bs.fraudgpt||{},da=bs.defenseai||{};
+  const fails=fg.failed_attacks||[],wins=fg.successful_evasions||[];
   const adaptations=da.adaptations||stats?.adaptations||[];
   const rules=bs.active_rules||[];
-
-  // Count occurrences of each strategy
-  function countItems(arr){
-    const counts={};
-    arr.forEach(s=>{ counts[s]=(counts[s]||0)+1; });
-    return Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  }
-  const failCounts = countItems(fails);
-  const winCounts  = countItems(wins);
-
-  // FraudGPT thinking
-  if(bs.last_detected){
-    setThink('fg','<strong style="color:var(--red)">Just got caught.</strong> Analysing what triggered it. Switching to a different approach.');
-  }else if(winCounts.length){
-    const top=winCounts[0];
-    setThink('fg',`<strong style="color:var(--green)">Evading successfully.</strong> Best strategy: <em>${esc(top[0])}</em> (worked ${top[1]}×)`);
-  }else{
-    setThink('fg',`Trying level ${bs.difficulty||1} attacks. No successful evasions yet.`);
-  }
-
-  // DefenseAI thinking
-  if(adaptations.length){
-    const l=adaptations[adaptations.length-1];
-    setThink('da',`<strong style="color:var(--cyan)">${adaptations.length} new rule${adaptations.length>1?'s':''} created.</strong> Latest: <em>${esc(l.rule_name||'')}</em> — ${esc((l.description||'').slice(0,60))}`);
-  }else{
-    setThink('da',`Monitoring with <strong>${rules.length}</strong> rules. No evasions yet — holding steady.`);
-  }
-
-  // FraudGPT failures — with counts
-  const fEl=document.getElementById('fg-fails');
-  if(fEl){
-    fEl.innerHTML = failCounts.length
-      ? failCounts.slice(0,6).map(([s,n])=>
-          `<div class="mr fail">${esc(s)}`+
-          (n>1?` <span style="color:var(--red);font-size:9px;font-weight:600;opacity:.8;">×${n}</span>`:'')+
-          `</div>`).join('')
-      : '<div class="mr empty">None yet</div>';
-  }
-
-  // FraudGPT wins — with counts, sorted by most successful
-  const wEl=document.getElementById('fg-wins');
-  if(wEl){
-    wEl.innerHTML = winCounts.length
-      ? winCounts.slice(0,6).map(([s,n])=>
-          `<div class="mr win">${esc(s)}`+
-          (n>1?` <span style="color:var(--green);font-size:9px;font-weight:600;opacity:.8;">×${n}</span>`:'')+
-          `</div>`).join('')
-      : '<div class="mr empty">None yet</div>';
-  }
-
-  // DefenseAI new rules
-  const dEl=document.getElementById('da-rules');
-  if(dEl) dEl.innerHTML=adaptations.length
-    ? adaptations.slice(-6).map(a=>`<div class="mr rule"><strong>${esc(a.rule_name||'')}</strong> — ${esc((a.description||'').slice(0,65))}</div>`).join('')
-    : '<div class="mr empty">No evasions yet</div>';
-
-  // Store for popup modals
-  agentModalData.fraud   = {fails, wins};
-  agentModalData.defense = {adaptations, rules};
-
+  function countItems(arr){const c={};arr.forEach(s=>{c[s]=(c[s]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);}
+  const wc=countItems(wins);
+  if(bs.last_detected)setStatus('fg','<strong style="color:var(--red)">Just got caught.</strong> Switching strategy.');
+  else if(wc.length)setStatus('fg',`<strong style="color:var(--green)">Evading.</strong> Best: <em>${esc(wc[0][0])}</em> ×${wc[0][1]}`);
+  else setStatus('fg',`Trying level ${bs.difficulty||1} attacks.`);
+  if(adaptations.length){const l=adaptations[adaptations.length-1];setStatus('da',`<strong style="color:var(--purple)">${adaptations.length} rule${adaptations.length>1?'s':''} added.</strong> Latest: <em>${esc(l.rule_name||'')}</em>`);}
+  else setStatus('da',`Monitoring ${rules.length} rules.`);
+  agentData.fraud={fails,wins};
+  agentData.defense={adaptations,rules};
   updateRulesStrip(rules,adaptations);
-
-  // Update scoreboard counters — fpost events come from SSE stream only (no duplicates)
-  const bstats=stats.battle||{};
-  const newDet=bstats.detections||0, newEva=bstats.evasions||0, newA=adaptations.length;
-  if(newA>prevAdapts&&prevAdapts>0){
-    const badge=document.getElementById('rs-new');
-    if(badge){badge.style.display='inline';setTimeout(()=>badge.style.display='none',4000);}
-  }
-  prevDet=newDet; prevEva=newEva; prevAdapts=newA;
+  const newA=adaptations.length;
+  if(newA>prevAdapts&&prevAdapts>0){const badge=document.getElementById('rs-new');if(badge){badge.style.display='inline';setTimeout(()=>badge.style.display='none',4000);}}
+  prevDet=stats.battle?.detections||0;
+  prevEva=stats.battle?.evasions||0;
+  prevAdapts=newA;
 }
 
 function updateRulesStrip(rules,adaptations){
   const newNames=new Set(adaptations.map(a=>a.rule_name));
-  const list=document.getElementById('b-rlist'); if(!list)return;
-  set('b-rcnt',`(${rules.length} active)`);
+  const list=document.getElementById('b-rlist');if(!list)return;
+  set('b-rcnt',`(${rules.length})`);
   list.innerHTML='';
   rules.forEach(r=>{
     const p=document.createElement('div');
-    p.className=`rp ${newNames.has(r)?'new_':'base'}`;
+    p.className=`rchip ${newNames.has(r)?'new_':'base'}`;
     p.textContent=RULE_FRIENDLY[r]||r; p.title=r;
     list.appendChild(p);
   });
@@ -888,30 +711,21 @@ function startStream(){
   logES.onmessage=ev=>{
     try{
       const e=JSON.parse(ev.data);
-      const msg=e.message||'', low=msg.toLowerCase(), k=e.kind||'info';
+      const msg=e.message||'',low=msg.toLowerCase(),k=e.kind||'info';
       const strat=msg.match(/"([^"]+)"/)?.[1]||'';
-
-      // Attack — only fire on FraudGPT strategy line, not on seeding/scoring lines
       if(low.includes('fraudgpt strategy:')){
-        if(strat) setThink('fg',`Trying: <em>${esc(strat)}</em>`);
-        if(strat) fpost('R','Attacking', `Trying "${esc(strat)}"`);
-
-      // Detection — only fire on RingScout line, ignore the DefenseAI summary duplicate
-      } else if(low.includes('ringscout: caught')){
+        if(strat){setStatus('fg',`Trying: <em>${esc(strat)}</em>`);fpost('R','Attacking',`"${esc(strat)}"`);}
+      }else if(low.includes('ringscout: caught')){
         const score=msg.match(/score (\d+)/)?.[1]||'';
-        fpost('B','Caught', `"${esc(strat)}" — score ${score}/100`);
-        fpost('R','Got caught', `"${esc(strat)}" was detected. Switching strategy.`);
-
-      // Evasion — only fire on the FraudGPT EVADED line
-      } else if(low.includes('fraudgpt evaded')){
-        fpost('R','Slipped through', strat ? `"${esc(strat)}" wasn't detected.` : 'Defender missed it.');
-
-      // New rule — only fire on the DefenseAI rule line, ignore the _log_battle_event duplicate
-      } else if(k==='rule'||low.includes('defenseai: new rule')){
-        const ruleName=msg.match(/"([^"]+)"/)?.[1]||'';
-        if(ruleName){
-          fpost('B','New rule added', `"${esc(ruleName)}" — closing the gap.`);
-          fpost('R','Defender adapted', 'A new detection rule just went live.');
+        fpost('B','Caught',`"${esc(strat)}" — score ${score}/100`);
+        fpost('R','Got caught','Switching strategy next round.');
+      }else if(low.includes('fraudgpt evaded')){
+        fpost('R','Slipped through',strat?`"${esc(strat)}" wasn't detected.`:'Defender missed it.');
+      }else if(k==='rule'||low.includes('defenseai: new rule')){
+        const rn=msg.match(/"([^"]+)"/)?.[1]||'';
+        if(rn){
+          fpost('B','New rule',`"${esc(rn)}" added.`);
+          fpost('R','Defender adapted','New rule just went live.');
           const badge=document.getElementById('rs-new');
           if(badge){badge.style.display='inline';setTimeout(()=>badge.style.display='none',4000);}
         }
@@ -921,192 +735,115 @@ function startStream(){
 }
 function stopStream(){if(logES){logES.close();logES=null;}}
 
-async function refreshStats(){
+async function refreshStats(){try{const r=await fetch(`${API}/stats`);const d=await r.json();applyStats(d);}catch{}}
+
+async function doReset(){
+  if(!confirm('Reset all stats and wipe both AI memories?'))return;
   try{
-    const r=await fetch(`${API}/stats`);
-    const d=await r.json();
-    applyStats(d);
-    updateRulesStrip(d.active_rules||[], [...(d.adaptations||[]), ...(d.battle_rule_names||[]).map(n=>({rule_name:n}))]);
-  }catch{}
+    await fetch(`${API}/reset`,{method:'POST'});
+    ['a-tot','a-det','a-eva'].forEach(id=>set(id,'0'));
+    set('a-rate','—');
+    document.getElementById('oc').style.display='none';
+    document.getElementById('chips-wrap').style.display='none';
+    document.getElementById('rep-btn').classList.remove('on');
+    document.getElementById('a-placeholder').style.display='flex';
+    document.getElementById('a-placeholder').innerHTML='<div class="a-ph-t">Launch an attack to see results</div><div class="a-ph-s">The AI will explain what it found in plain English</div>';
+    document.getElementById('bh-bar').style.display='none';
+    currentReport=''; currentRingMeta=null;
+    d3.select('#gsvg-attack').selectAll('*').remove(); set('ginfo','');
+    ['b-atk','b-det','b-eva','b-rules'].forEach(id=>set(id,'0'));
+    d3.select('#gsvg-battle').selectAll('*').remove();
+    document.getElementById('b-feed').innerHTML='';
+    document.getElementById('b-rlist').innerHTML='';
+    prevDet=0;prevEva=0;prevAdapts=0;
+    if(battleOn){await fetch(`${API}/battle/stop`,{method:'POST'}).catch(()=>{});battleOn=false;const btn=document.getElementById('bbtn');btn.textContent='Start Battle';btn.className='battle-btn go';stopPoll();stopStream();}
+    closeReport();closeAgent();await checkApi();
+  }catch(e){alert('Backend error: '+e.message);}
 }
 
-// ── D3 graph ───────────────────────────────────────────────────────────
+// ── D3 Graph ────────────────────────────────────────────────────
 const simMap={};
-
 function nodeColor(d,fset){
   const id=d.id||'';
-  if(fset.has(id)||d.suspicious) return '#ff3355';
-  if(/^(FRAUD_SRC|STEALTH_SRC|SOURCE|^SRC$|SRC_[A-Z])/.test(id)) return '#ff7a45';
-  if(/^(MULE|ACC_[A-Z]|HOP|MID_|STEALTH_DST)/.test(id)) return '#a278ff';
-  if(/^(DST|DEST|AGG)/.test(id)) return '#ff7a45';
-  if(/^CUST_/.test(id)) return '#00e080';
-  if((d.pagerank||0)>0.15) return '#ffb800';
-  return '#2a4a70';
+  if(fset.has(id)||d.suspicious)return '#ff2d55';
+  if(/^(FRAUD_SRC|STEALTH_SRC|SOURCE|^SRC$|SRC_[A-Z])/.test(id))return '#ff7a45';
+  if(/^(MULE|ACC_[A-Z]|HOP|MID_|STEALTH_DST)/.test(id))return '#a78bfa';
+  if(/^(DST|DEST|AGG)/.test(id))return '#ff7a45';
+  if(/^CUST_/.test(id))return '#00d474';
+  if((d.pagerank||0)>0.15)return '#f5a623';
+  return '#1a2a3a';
 }
 function nodeR(d){return Math.max(8,Math.min(22,9+(d.pagerank||0)*55+Math.log((d.tx_count||1)+1)*1.5));}
-
 function nodeLabel(id){
-  if(/^FRAUD_SRC|STEALTH_SRC/.test(id)) return 'Fraudster';
-  if(/^SOURCE|^SRC$|SRC_/.test(id)) return 'Source';
-  if(/^MULE/.test(id)) return 'Mule '+(id.match(/\d+$/)?.[0]||'');
-  if(/^ACC_/.test(id)) return 'Account '+id.slice(-1);
-  if(/^CUST_/.test(id)) return 'Customer '+(id.slice(-3).replace(/^0+/,'')||'?');
-  if(/^DST|DEST|AGG/.test(id)) return 'Destination';
-  if(/^MID_/.test(id)) return 'Middleman';
-  if(/^HOP/.test(id)) return 'Relay';
-  if(/^STEALTH_DST/.test(id)) return 'Target';
-  return id.length>10 ? id.slice(0,8)+'…' : id;
+  if(/^FRAUD_SRC|STEALTH_SRC/.test(id))return 'Fraudster';
+  if(/^SOURCE|^SRC$|SRC_/.test(id))return 'Source';
+  if(/^MULE/.test(id))return 'Mule '+(id.match(/\d+$/)?.[0]||'');
+  if(/^ACC_/.test(id))return 'Account '+id.slice(-1);
+  if(/^CUST_/.test(id))return 'Customer '+(id.slice(-3).replace(/^0+/,'')||'?');
+  if(/^DST|DEST|AGG/.test(id))return 'Destination';
+  if(/^MID_/.test(id))return 'Middleman';
+  if(/^HOP/.test(id))return 'Relay';
+  if(/^STEALTH_DST/.test(id))return 'Target';
+  return id.length>10?id.slice(0,8)+'…':id;
 }
-
 function renderGraph(gid,data,flagged){
-  const svgEl=document.getElementById(`gsvg-${gid}`); if(!svgEl)return;
+  const svgEl=document.getElementById(`gsvg-${gid}`);if(!svgEl)return;
   const fset=new Set(flagged);
   const W=svgEl.clientWidth||svgEl.getBoundingClientRect().width||600;
   const H=svgEl.clientHeight||svgEl.getBoundingClientRect().height||380;
   const svg=d3.select(`#gsvg-${gid}`);
-  svg.selectAll('*').remove(); svg.attr('width',W).attr('height',H);
+  svg.selectAll('*').remove();svg.attr('width',W).attr('height',H);
   const nodes=(data.nodes||[]).map(n=>({...n.data}));
   const links=(data.edges||[]).map(e=>({source:e.data.source,target:e.data.target,amount:e.data.amount||0,count:e.data.count||1}));
-  if(!nodes.length){svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle').attr('fill','#3a5070').attr('font-size','13px').attr('font-family','Sora,sans-serif').text('Waiting for transactions…');return;}
+  if(!nodes.length){svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle').attr('fill','#333').attr('font-size','13px').attr('font-family','Inter,sans-serif').text('Waiting for transactions…');return;}
   const defs=svg.append('defs');
-  [{id:'gray',c:'#2a4060'},{id:'red',c:'#ff3355'},{id:'orange',c:'#ff7a45'},{id:'amber',c:'#ffb800'}].forEach(({id,c})=>{
+  [{id:'gray',c:'#1e3050'},{id:'red',c:'#ff2d55'},{id:'orange',c:'#ff7a45'},{id:'amber',c:'#f5a623'}].forEach(({id,c})=>{
     const m=defs.append('marker').attr('id',`arr-${gid}-${id}`).attr('viewBox','0 0 10 10').attr('refX',6).attr('refY',5).attr('markerWidth',7).attr('markerHeight',7).attr('orient','auto-start-reverse');
     m.append('path').attr('d','M0 0L10 5L0 10Z').attr('fill',c).attr('stroke',c).attr('stroke-width',.5);
   });
   const g=svg.append('g');
   svg.call(d3.zoom().scaleExtent([.2,4]).on('zoom',ev=>g.attr('transform',ev.transform)));
   if(simMap[gid])simMap[gid].stop();
-
-  // Pre-cluster: give fraud ring nodes initial positions close together but spread out
-  if(fset.size > 0) {
-    const cx = W * 0.55, cy = H * 0.45;
-    const spreadR = Math.max(80, fset.size * 22); // scale spread with ring size
-    let i = 0;
-    nodes.forEach(d => {
-      if(fset.has(d.id) || d.suspicious) {
-        const angle = (i / fset.size) * 2 * Math.PI;
-        d.x = cx + Math.cos(angle) * spreadR;
-        d.y = cy + Math.sin(angle) * spreadR;
-        i++;
-      }
-    });
+  if(fset.size>0){
+    const cx=W*.55,cy=H*.45,spreadR=Math.max(80,fset.size*22);let i=0;
+    nodes.forEach(d=>{if(fset.has(d.id)||d.suspicious){const a=(i/fset.size)*2*Math.PI;d.x=cx+Math.cos(a)*spreadR;d.y=cy+Math.sin(a)*spreadR;i++;}});
   }
-
   const sim=d3.forceSimulation(nodes)
-    .force('link',d3.forceLink(links).id(d=>d.id).distance(d=>{
-      const sf=fset.has(d.source.id||d.source), tf=fset.has(d.target.id||d.target);
-      return (sf&&tf) ? 65 : (sf||tf) ? 70 : 100;
-    }).strength(d=>{
-      const sf=fset.has(d.source.id||d.source), tf=fset.has(d.target.id||d.target);
-      return (sf||tf) ? 0.9 : 0.5;
-    }))
-    .force('charge',d3.forceManyBody().strength(d=>
-      (fset.has(d.id)||d.suspicious) ? -300 : -180  // fraud nodes repel each other strongly
-    ))
-    .force('center',d3.forceCenter(W/2, H/2))
-    .force('col',d3.forceCollide().radius(d=>nodeR(d)+14))  // bigger collision radius
-    .force('cluster', () => {
-      if(fset.size === 0) return;
-      let cx=0, cy=0, count=0;
-      nodes.forEach(d => { if(fset.has(d.id)||d.suspicious){cx+=d.x||0;cy+=d.y||0;count++;} });
-      if(!count) return;
-      cx/=count; cy/=count;
-      nodes.forEach(d => {
-        if(fset.has(d.id)||d.suspicious) {
-          d.vx = (d.vx||0) + (cx - d.x) * 0.03; // gentler pull so repulsion keeps them spread
-          d.vy = (d.vy||0) + (cy - d.y) * 0.03;
-        }
-      });
-    });
+    .force('link',d3.forceLink(links).id(d=>d.id).distance(d=>{const sf=fset.has(d.source.id||d.source),tf=fset.has(d.target.id||d.target);return(sf&&tf)?65:(sf||tf)?70:100;}).strength(d=>{const sf=fset.has(d.source.id||d.source),tf=fset.has(d.target.id||d.target);return(sf||tf)?.9:.5;}))
+    .force('charge',d3.forceManyBody().strength(d=>(fset.has(d.id)||d.suspicious)?-300:-180))
+    .force('center',d3.forceCenter(W/2,H/2))
+    .force('col',d3.forceCollide().radius(d=>nodeR(d)+14))
+    .force('cluster',()=>{if(!fset.size)return;let cx=0,cy=0,cnt=0;nodes.forEach(d=>{if(fset.has(d.id)||d.suspicious){cx+=d.x||0;cy+=d.y||0;cnt++;}});if(!cnt)return;cx/=cnt;cy/=cnt;nodes.forEach(d=>{if(fset.has(d.id)||d.suspicious){d.vx=(d.vx||0)+(cx-d.x)*.03;d.vy=(d.vy||0)+(cy-d.y)*.03;}});});
   simMap[gid]=sim;
   const link=g.append('g').selectAll('path').data(links).join('path')
     .attr('fill','none')
-    .attr('stroke',d=>{const sf=fset.has(d.source.id||d.source),tf=fset.has(d.target.id||d.target);if(sf||tf)return '#ff3355';if(d.amount>5000)return '#ff7a45';if(d.amount>1000)return '#ffb80066';return '#1e3050';})
-    .attr('stroke-width',d=>Math.max(1,Math.min(4,Math.log(d.amount/50+1)))).attr('stroke-opacity',.8)
+    .attr('stroke',d=>{const sf=fset.has(d.source.id||d.source),tf=fset.has(d.target.id||d.target);if(sf||tf)return '#ff2d55';if(d.amount>5000)return '#ff7a45';if(d.amount>1000)return '#f5a62344';return '#1a2a3a';})
+    .attr('stroke-width',d=>Math.max(1,Math.min(4,Math.log(d.amount/50+1)))).attr('stroke-opacity',.85)
     .attr('marker-end',d=>{const sf=fset.has(d.source.id||d.source),tf=fset.has(d.target.id||d.target);if(sf||tf)return `url(#arr-${gid}-red)`;if(d.amount>5000)return `url(#arr-${gid}-orange)`;if(d.amount>1000)return `url(#arr-${gid}-amber)`;return `url(#arr-${gid}-gray)`;});
   const elbl=g.append('g').selectAll('text').data(links).join('text')
     .attr('text-anchor','middle').attr('font-size','9px').attr('font-family','JetBrains Mono,monospace').attr('pointer-events','none')
-    .attr('fill',d=>(fset.has(d.source.id||d.source)||fset.has(d.target.id||d.target))?'#ff335566':'#2a4a6a')
+    .attr('fill',d=>(fset.has(d.source.id||d.source)||fset.has(d.target.id||d.target))?'rgba(255,45,85,.5)':'#1e3050')
     .text(d=>d.amount>=1000?'$'+(d.amount/1000).toFixed(1)+'k':d.amount>=1?'$'+Math.round(d.amount):'');
   const ng=g.append('g').selectAll('g').data(nodes).join('g').attr('cursor','pointer')
-    .call(d3.drag()
-      .on('start',(ev,d)=>{if(!ev.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;})
-      .on('drag', (ev,d)=>{d.fx=ev.x;d.fy=ev.y;})
-      .on('end',  (ev,d)=>{if(!ev.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}));
+    .call(d3.drag().on('start',(ev,d)=>{if(!ev.active)sim.alphaTarget(.3).restart();d.fx=d.x;d.fy=d.y;}).on('drag',(ev,d)=>{d.fx=ev.x;d.fy=ev.y;}).on('end',(ev,d)=>{if(!ev.active)sim.alphaTarget(0);d.fx=null;d.fy=null;}));
   ng.filter(d=>fset.has(d.id)||d.suspicious)
-    .append('circle').attr('r',d=>nodeR(d)+6).attr('fill','none').attr('stroke','#ff3355').attr('stroke-width',1.5).attr('stroke-dasharray','4 3').attr('opacity',.5);
-  ng.append('circle').attr('r',d=>nodeR(d)).attr('fill',d=>nodeColor(d,fset)).attr('stroke','#080b12').attr('stroke-width',2).attr('opacity',.93);
-  ng.append('text').attr('dy',d=>nodeR(d)+13).attr('text-anchor','middle').attr('fill','#3a5a7a').attr('font-size','10px').attr('font-family','Sora,sans-serif').text(d=>nodeLabel(d.id));
+    .append('circle').attr('r',d=>nodeR(d)+7).attr('fill','none').attr('stroke','#ff2d55').attr('stroke-width',1).attr('stroke-dasharray','4 3').attr('opacity',.4);
+  ng.append('circle').attr('r',d=>nodeR(d)).attr('fill',d=>nodeColor(d,fset)).attr('stroke','#080808').attr('stroke-width',2).attr('opacity',.95);
+  ng.append('text').attr('dy',d=>nodeR(d)+13).attr('text-anchor','middle').attr('fill','#333').attr('font-size','10px').attr('font-family','Inter,sans-serif').text(d=>nodeLabel(d.id));
   const tip=document.getElementById('tip');
   ng.on('mouseover',(ev,d)=>{
     const col=nodeColor(d,fset);
     document.getElementById('tip-n').textContent=nodeLabel(d.id);
     document.getElementById('tip-n').style.color=col;
-    document.getElementById('tip-b').innerHTML=
-      `Sent: <strong>$${Math.round(d.total_sent||0).toLocaleString()}</strong><br>`+
-      `Received: <strong>$${Math.round(d.total_received||0).toLocaleString()}</strong><br>`+
-      `Transactions: <strong>${d.tx_count||0}</strong>`+
-      ((fset.has(d.id)||d.suspicious)?'<br><span style="color:var(--red);font-weight:600;margin-top:4px;display:block;">Flagged as fraud</span>':'');
+    document.getElementById('tip-b').innerHTML=`Sent: <strong>$${Math.round(d.total_sent||0).toLocaleString()}</strong><br>Received: <strong>$${Math.round(d.total_received||0).toLocaleString()}</strong><br>Transactions: <strong>${d.tx_count||0}</strong>`+((fset.has(d.id)||d.suspicious)?'<br><span style="color:#ff2d55;font-weight:600;display:block;margin-top:3px;">Flagged as fraud</span>':'');
     tip.style.display='block';
   }).on('mousemove',ev=>{tip.style.left=(ev.clientX+14)+'px';tip.style.top=(ev.clientY-16)+'px';}).on('mouseout',()=>{tip.style.display='none';});
   sim.on('tick',()=>{
     nodes.forEach(d=>{d.x=Math.max(20,Math.min(W-20,d.x));d.y=Math.max(20,Math.min(H-20,d.y));});
-    link.attr('d',d=>{
-      const sx=d.source.x,sy=d.source.y,tx=d.target.x,ty=d.target.y;
-      const dx=tx-sx,dy=ty-sy,dist=Math.sqrt(dx*dx+dy*dy)||1;
-      const r1=nodeR(d.source)+2,r2=nodeR(d.target)+9;
-      return `M${sx+dx/dist*r1},${sy+dy/dist*r1} L${tx-dx/dist*r2},${ty-dy/dist*r2}`;
-    });
+    link.attr('d',d=>{const sx=d.source.x,sy=d.source.y,tx=d.target.x,ty=d.target.y;const dx=tx-sx,dy=ty-sy,dist=Math.sqrt(dx*dx+dy*dy)||1;const r1=nodeR(d.source)+2,r2=nodeR(d.target)+9;return `M${sx+dx/dist*r1},${sy+dy/dist*r1} L${tx-dx/dist*r2},${ty-dy/dist*r2}`;});
     elbl.attr('x',d=>(d.source.x+d.target.x)/2).attr('y',d=>(d.source.y+d.target.y)/2-5);
     ng.attr('transform',d=>`translate(${d.x},${d.y})`);
   });
-}
-
-function set(id,val){const e=document.getElementById(id);if(e)e.textContent=val;}
-function show(id){const e=document.getElementById(id);if(e)e.style.display='flex';}
-function hide(id){const e=document.getElementById(id);if(e)e.style.display='none';}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-async function doReset(){
-  if(!confirm('Reset all stats, clear the graph, and wipe both AI memories?')) return;
-  try{
-    await fetch(`${API}/reset`,{method:'POST'});
-    // Reset attack tab
-    ['a-tot','a-det','a-eva'].forEach(id=>set(id,'0'));
-    set('a-rate','—');
-    hide('oc'); hide('wh');
-    document.getElementById('rep-btn').classList.remove('ready');
-    document.getElementById('rep-placeholder').style.display='flex';
-    document.getElementById('rep-placeholder').innerHTML=`
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);text-align:center;padding:20px;">
-        
-        <div style="font-size:13px;color:var(--text2);font-weight:500;">Launch an attack to generate a report</div>
-        <div style="font-size:11px;">The AI will explain what it found in plain English</div>
-      </div>`;
-    document.getElementById('bhardened').style.display='none';
-    currentReport=''; currentRingMeta=null;
-    d3.select('#gsvg-attack').selectAll('*').remove();
-    set('ginfo','');
-    // Reset battle tab
-    ['b-atk','b-det','b-eva','b-rules'].forEach(id=>set(id,'0'));
-    d3.select('#gsvg-battle').selectAll('*').remove();
-    document.getElementById('fg-fails').innerHTML='<div class="mr empty">None yet</div>';
-    document.getElementById('fg-wins').innerHTML='<div class="mr empty">None yet</div>';
-    document.getElementById('da-rules').innerHTML='<div class="mr empty">No evasions yet</div>';
-    document.getElementById('feed-r').innerHTML='';
-    document.getElementById('feed-b').innerHTML='';
-    document.getElementById('b-rlist').innerHTML='';
-    prevDet=0; prevEva=0; prevAdapts=0;
-    if(battleOn){
-      await fetch(`${API}/battle/stop`,{method:'POST'}).catch(()=>{});
-      battleOn=false;
-      const btn=document.getElementById('bbtn');
-      btn.textContent='▶  Start the Battle'; btn.className='bbtn go';
-      stopPoll(); stopStream();
-    }
-    closeReport();
-    await checkApi();
-  }catch(e){ alert('Could not reach backend: '+e.message); }
 }
 
 checkApi();
